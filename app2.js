@@ -58,10 +58,12 @@ function vAgenda(){
     const isTod=iso===today();
     html+="<div class='card daycard"+(isTod?" now":"")+"'><div class='row'><div class='name' style='text-transform:capitalize'>"+nd(iso)+"</div>"+(list.length?"<span class='chip'>"+list.length+"</span>":"<span class='tiny'>Libero</span>")+"</div>";
     hours.forEach(function(hh){
-      const found=list.find(a=>(a.time||"").slice(0,5)===hh);
+      const found=slotApt(list,hh);
       if(found){
         const c=C(found.clientId);
-        html+="<div class='slot' onclick='openApt(\""+found.id+"\")'><span>"+hh+" · "+esc(c?c.name:"Cliente")+" · "+mins(found)+" min</span><span class='tiny'>"+(found.status==="done"?"Fatta":found.status==="cancelled"?"Annullata":"")+"</span></div>";
+        const stime=(found.time||"").slice(0,5);
+        const lab=stime===hh?hh+" · "+esc(c?c.name:"Cliente")+" · "+mins(found)+" min":hh+" · ancora "+esc(c?c.name:"lei");
+        html+="<div class='slot' onclick='openApt(\""+found.id+"\")'><span>"+lab+"</span><span class='tiny'>"+(found.status==="done"?"Fatta":found.status==="cancelled"?"Annullata":"occupata")+"</span></div>";
       } else {
         html+="<div class='slot empty' onclick='newAt(\""+iso+"\",\""+hh+"\")'>"+hh+" · libero</div>";
       }
