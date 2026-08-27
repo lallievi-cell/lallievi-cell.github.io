@@ -5,8 +5,9 @@ function formApt(id,time){
   }
   const a=id?db.appointments.find(x=>x.id===id):{date:tab==="agenda"?selectedDate:today(),time:time||"10:00",status:"booked",paid:0};
   const opts=db.clients.map(function(c){return "<option value='"+c.id+"' "+(c.id===a.clientId?"selected":"")+">"+esc(c.name)+"</option>"}).join("");
-  const sopts=(db.services||[]).map(function(s){return "<option value='"+s.id+"' "+(s.id===a.serviceId?"selected":"")+">"+esc(s.name)+" · "+euro(s.price)+"</option>"}).join("");
+  const sopts=(db.services||[]).map(function(s){return "<option value='"+s.id+"' "+(s.id===a.serviceId?"selected":"")+">"+esc(s.name)+" · "+euro(s.price)+" · "+s.minutes+" min</option>"}).join("");
   const price=a.price!=null?a.price:(S(a.serviceId)||db.services[0]).price;
+  const minutes=a.minutes!=null?a.minutes:(S(a.serviceId)||db.services[0]).minutes;
   const c=C(a.clientId)||db.clients[0];
   const wa=c?waLink(c.phone,msgRemind(Object.assign({},a,{clientId:c.id}))):"";
   let h="<h2>"+(id?"Appuntamento":"Nuovo appuntamento")+"</h2>";
@@ -14,7 +15,8 @@ function formApt(id,time){
   h+="<button type='button' class='btn btn-ghost btn-sm' style='margin-top:8px' onclick='formClient(null,1)'>+ Nuova cliente</button>";
   h+="<label>Giorno</label><input id='f_d' type='date' value='"+(a.date||today())+"'>";
   h+="<label>Ora</label><input id='f_t' type='time' value='"+(a.time||"10:00")+"'>";
-  h+="<label>Servizio</label><select id='f_s' onchange='var s=S(this.value);if(s)document.getElementById(\"f_p\").value=s.price'>"+sopts+"</select>";
+  h+="<label>Servizio</label><select id='f_s' onchange='fillService()'>"+sopts+"</select>";
+  h+="<label>Durata (minuti)</label><input id='f_min' type='number' step='5' min='15' value='"+minutes+"'>";
   h+="<label>Prezzo €</label><input id='f_p' type='number' step='0.5' value='"+price+"'>";
   h+="<label>Gia pagato €</label><input id='f_pay' type='number' step='0.5' value='"+(a.paid||0)+"'>";
   h+="<label>Cosa hai fatto</label><textarea id='f_w'>"+esc(a.work||"")+"</textarea>";
@@ -28,7 +30,7 @@ function formApt(id,time){
 }
 function openApt(id){formApt(id)}
 function saveApt(id){
-  const rec={id:id||uid(),clientId:document.getElementById("f_c").value,date:document.getElementById("f_d").value,time:document.getElementById("f_t").value,serviceId:document.getElementById("f_s").value,price:+document.getElementById("f_p").value||0,paid:+document.getElementById("f_pay").value||0,work:document.getElementById("f_w").value.trim(),status:document.getElementById("f_st").value};
+  const rec={id:id||uid(),clientId:document.getElementById("f_c").value,date:document.getElementById("f_d").value,time:document.getElementById("f_t").value,serviceId:document.getElementById("f_s").value,minutes:+document.getElementById("f_min").value||60,price:+document.getElementById("f_p").value||0,paid:+document.getElementById("f_pay").value||0,work:document.getElementById("f_w").value.trim(),status:document.getElementById("f_st").value};
   if(!rec.clientId){alert("Serve una cliente");return}
   const i=db.appointments.findIndex(a=>a.id===rec.id);
   if(i>=0)db.appointments[i]=rec;else db.appointments.push(rec);
@@ -114,7 +116,7 @@ function openClient(id){
   h+="<h3 style='margin:18px 0 8px'>Storico</h3>";
   if(!hist.length) h+="<p class='muted'>Nessuno storico.</p>";
   else hist.forEach(function(a){
-    h+="<div class='list-item' onclick='openApt(\""+a.id+"\")'><div class='row'><strong>"+nd(a.date)+" "+esc(a.time||"")+"</strong><span>"+euro(a.price||0)+"</span></div><div class='muted'>"+esc((S(a.serviceId)||{}).name||"")+"</div>";
+    h+="<div class='list-item' onclick='openApt(\""+a.id+"\")'><div class='row'><strong>"+nd(a.date)+" "+esc(a.time||"")+"</strong><span>"+euro(a.price||0)+"</span></div><div class='muted'>"+esc((S(a.serviceId)||{}).name||"")+" · "+mins(a)+" min</div>";
     if(a.work) h+="<div style='margin-top:4px'>"+esc(a.work)+"</div>";
     h+="</div>";
   });
