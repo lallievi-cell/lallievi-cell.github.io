@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="Unghie Mamma"/>
+<meta name="theme-color" content="#7A3048"/>
+<title>Unghie Mamma</title>
+<style>
+:root{--rose:#7A3048;--rose-soft:#C97B8F;--blush:#F6E6EA;--cream:#FFF8F5;--ink:#2B1A1F;--muted:#7A5A63;--line:#EBD3D8;--ok:#2F7A4A;--bad:#B42318;--card:#fff;--shadow:0 10px 30px rgba(122,48,72,.08);--radius:22px;--safe-top:env(safe-area-inset-top);--safe-bottom:env(safe-area-inset-bottom)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;padding:0;background:var(--cream);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,sans-serif}body{padding-bottom:calc(92px + var(--safe-bottom));min-height:100dvh}button,input,select,textarea{font:inherit}button{cursor:pointer}h1,h2,h3,p{margin:0}
+.top{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#7A3048,#8E3B55);color:#fff;padding:calc(14px + var(--safe-top)) 18px 16px}.top h1{font-size:22px;font-weight:700}.top p{opacity:.85;font-size:14px;margin-top:4px}
+.wrap{padding:16px;max-width:720px;margin:0 auto}.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:12px;border:1px solid #f3e4e7}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.muted{color:var(--muted);font-size:14px}.tiny{font-size:12px;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:16px;padding:14px 16px;font-weight:700;font-size:16px;text-decoration:none}
+.btn-primary{background:var(--rose);color:#fff;width:100%}.btn-soft{background:var(--blush);color:var(--rose)}.btn-ghost{background:transparent;color:var(--rose);border:1.5px solid var(--line)}.btn-bad{background:#FDECEC;color:var(--bad)}.btn-sm{padding:10px 12px;font-size:14px;border-radius:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.chip{display:inline-flex;background:var(--blush);color:var(--rose);border-radius:999px;padding:6px 10px;font-size:13px;font-weight:650}.chip.debt{background:#FDECEC;color:var(--bad)}.chip.paid{background:#E8F6EC;color:var(--ok)}
+input,select,textarea{width:100%;border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:13px 12px;font-size:16px}textarea{min-height:90px}label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin:12px 0 6px}.search{margin-bottom:12px}
+.apt{display:flex;gap:12px}.timebox{min-width:62px;background:var(--blush);color:var(--rose);border-radius:14px;text-align:center;padding:8px 6px;font-weight:800}.timebox small{display:block;font-weight:600;font-size:11px}.name{font-weight:800;font-size:17px}.list-item{padding:12px 0;border-bottom:1px solid var(--line)}.list-item:last-child{border-bottom:0}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:8px 6px calc(8px + var(--safe-bottom))}
+.nav button{background:none;border:0;color:var(--muted);font-size:11px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px}.nav button.active{color:var(--rose)}.nav .ico{font-size:20px}
+.modal-bg{position:fixed;inset:0;background:rgba(43,26,31,.45);z-index:40;display:none;align-items:flex-end;justify-content:center}.modal-bg.show{display:flex}.modal{background:#fff;width:100%;max-width:720px;max-height:92dvh;overflow:auto;border-radius:28px 28px 0 0;padding:18px 16px calc(24px + var(--safe-bottom))}
+.handle{width:44px;height:5px;background:#E5C9D0;border-radius:99px;margin:0 auto 12px}.empty{text-align:center;padding:28px 10px;color:var(--muted)}.empty .big{font-size:42px;margin-bottom:8px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}.cal-grid .dow{font-size:11px;color:var(--muted);font-weight:700;padding:6px 0}.day{border:0;background:transparent;border-radius:12px;padding:8px 0;font-weight:700}.day.has{background:var(--blush);color:var(--rose)}.day.sel{background:var(--rose);color:#fff}.day.today{outline:2px solid var(--rose-soft)}
+.fab{position:fixed;right:16px;bottom:calc(108px + var(--safe-bottom));z-index:25;width:62px;height:62px;border-radius:50%;border:0;background:var(--rose);color:#fff;font-size:32px;box-shadow:0 12px 24px rgba(122,48,72,.28)}.money{font-weight:800}.hidden{display:none!important}
+</style>
+</head>
+<body>
+<header class="top"><h1 id="title">Oggi</h1><p id="subtitle">I tuoi appuntamenti</p></header>
+<main class="wrap">
+<input id="clientSearch" class="search hidden" type="search" enterkeyhint="search" autocomplete="off" placeholder="Cerca cliente o telefono"/>
+<div id="app"></div>
+</main>
+<button class="fab" id="fab" type="button" onclick="openNew()">+</button>
+<nav class="nav">
+<button type="button" class="active" data-tab="oggi" onclick="go('oggi')"><span class="ico">📅</span>Oggi</button>
+<button type="button" data-tab="agenda" onclick="go('agenda')"><span class="ico">🗓️</span>Agenda</button>
+<button type="button" data-tab="clienti" onclick="go('clienti')"><span class="ico">👩</span>Clienti</button>
+<button type="button" data-tab="soldi" onclick="go('soldi')"><span class="ico">💶</span>Soldi</button>
+</nav>
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+<script src="https://cdn.jsdelivr.net/gh/lallievi-cell/unghie-mamma@c997829c7585f45a72eff973c340e8b3ccde75fa/app.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/lallievi-cell/unghie-mamma@8dc0ebba4c47b4ef61dc70782c2360edd611902a/app2.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/lallievi-cell/unghie-mamma@7b05e6335d4e9b72f3bfa5f309fc253fc6a39da9/app3.js"></script>
+</body></html>
