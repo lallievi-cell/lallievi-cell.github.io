@@ -58,7 +58,7 @@ function go(t){
   document.getElementById("subtitle").textContent=T[t][1];
   const fab=document.getElementById("fab");
   fab.classList.toggle("hidden",t==="soldi");
-  fab.textContent=t==="clienti"?"+ Cliente":"+ Appuntamento";
+  fab.textContent="+";
   document.getElementById("clientSearch").classList.toggle("hidden",t!=="clienti");
   document.getElementById("filters").classList.toggle("hidden",t!=="clienti");
   if(t==="clienti") drawFilters();
