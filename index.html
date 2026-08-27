@@ -22,8 +22,8 @@ body{padding-bottom:calc(92px + var(--safe-bottom));min-height:100dvh;font-size:
 button,input,select,textarea{font:inherit}button{cursor:pointer}h1,h2,h3,p{margin:0}
 .top{position:sticky;top:0;z-index:20;background:#6B2740;color:#fff;padding:calc(14px + var(--safe-top)) 16px 14px}
 .toprow{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.top h1{font-size:28px;font-weight:800}.top p{opacity:.92;font-size:16px;margin-top:4px;font-weight:600}
-.topadd{width:52px;height:52px;border:0;border-radius:50%;background:#fff;color:#6B2740;font-size:34px;font-weight:800;line-height:1;flex-shrink:0}
+.top h1{font-size:26px;font-weight:800}.top p{opacity:.92;font-size:15px;margin-top:4px;font-weight:600}
+.topadd{border:0;border-radius:999px;background:#fff;color:#6B2740;font-size:16px;font-weight:800;line-height:1.1;padding:14px 14px;flex-shrink:0;white-space:nowrap}
 .wrap{padding:16px;max-width:720px;margin:0 auto}
 .card{background:#fff;border-radius:22px;box-shadow:0 8px 24px rgba(107,39,64,.10);padding:16px;margin-bottom:12px;border:1px solid #f0dde2}
 .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -79,7 +79,7 @@ textarea{min-height:90px}label{display:block;font-size:15px;font-weight:800;colo
 <header class="top">
 <div class="toprow">
 <div><h1 id="title">Oggi</h1><p id="subtitle">I tuoi appuntamenti</p></div>
-<button class="topadd" id="fab" type="button" onclick="openNew()">+</button>
+<button class="topadd" id="fab" type="button" onclick="openNew()">+ Prenota</button>
 </div>
 </header>
 <main class="wrap">
@@ -95,8 +95,8 @@ textarea{min-height:90px}label{display:block;font-size:15px;font-weight:800;colo
 </nav>
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
 <div class="toast" id="toast">Salvato.</div>
-<script src="./app.js?v=8"></script>
-<script src="./app2.js?v=8"></script>
-<script src="./app3.js?v=8"></script>
+<script src="./app.js?v=9"></script>
+<script src="./app2.js?v=9"></script>
+<script src="./app3.js?v=9"></script>
 </body>
 </html>
