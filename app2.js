@@ -65,7 +65,7 @@ function vAgenda(){
   const start=parseISO(days[0]);
   const end=parseISO(days[6]);
   const label=start.toLocaleDateString("it-IT",{day:"numeric",month:"short"})+" – "+end.toLocaleDateString("it-IT",{day:"numeric",month:"short"});
-  let html=calToggle()+"<div class='card'><div class='week-nav'><button type='button' class='btn btn-ghost btn-sm' onclick='shiftW(-1)'>←</button><strong style='flex:1;text-align:center'>"+label+"</strong><button type='button' class='btn btn-ghost btn-sm' onclick='shiftW(1)'>→</button></div></div>";
+  let html=calToggle()+"<div class='card'><div class='week-nav'><button type='button' class='btn btn-ghost btn-sm' onclick='shiftW(-1)'>←</button><button type='button' class='btn btn-soft btn-sm' onclick='goToday()'>Oggi</button><button type='button' class='btn btn-ghost btn-sm' onclick='shiftW(1)'>→</button></div><div style='text-align:center;font-weight:800;margin-top:6px'>"+label+"</div></div>";
   const hours=["09:00","10:00","11:00","12:00","14:00","15:00","16:00","17:00","18:00"];
   days.forEach(function(iso){
     const list=allApts(iso);
@@ -93,7 +93,7 @@ function vMonth(){
   const pad=(first.getDay()+6)%7;
   const dim=new Date(y,m+1,0).getDate();
   const title=first.toLocaleDateString("it-IT",{month:"long",year:"numeric"});
-  let html=calToggle()+"<div class='card'><div class='week-nav'><button type='button' class='btn btn-ghost btn-sm' onclick='shiftM(-1)'>←</button><strong style='flex:1;text-align:center;text-transform:capitalize'>"+title+"</strong><button type='button' class='btn btn-ghost btn-sm' onclick='shiftM(1)'>→</button></div>";
+  let html=calToggle()+"<div class='card'><div class='week-nav'><button type='button' class='btn btn-ghost btn-sm' onclick='shiftM(-1)'>←</button><button type='button' class='btn btn-soft btn-sm' onclick='goToday()'>Oggi</button><button type='button' class='btn btn-ghost btn-sm' onclick='shiftM(1)'>→</button></div><div style='text-align:center;font-weight:800;margin:6px 0 8px;text-transform:capitalize'>"+title+"</div>";
   html+="<div style='display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-weight:800;color:#5C3D45;font-size:13px;margin-bottom:6px'><div>L</div><div>M</div><div>M</div><div>G</div><div>V</div><div>S</div><div>D</div></div>";
   html+="<div style='display:grid;grid-template-columns:repeat(7,1fr);gap:4px'>";
   for(let i=0;i<pad;i++) html+="<div></div>";
