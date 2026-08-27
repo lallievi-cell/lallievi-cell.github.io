@@ -12,7 +12,7 @@ function card(a,opts){
     else actions+="<button type='button' class='btn btn-ghost btn-sm' onclick='openApt(\""+id+"\")'>Apri</button>";
     actions+="</div><div class='actions'><button type='button' class='btn btn-ghost btn-sm' onclick='shiftApt(\""+id+"\",15)'>+15 min</button><button type='button' class='btn btn-bad btn-sm' onclick='cancelApt(\""+id+"\")'>Annulla</button></div>";
   }
-  return "<div class='card"+(opts.now?" now":"")+"'>"+(late?"<div class='chip late' style='margin-bottom:8px'>Sta aspettando</div>":"")+"<div class='apt' onclick='openApt(\""+id+"\")'><div class='timebox'>"+esc((a.time||"--:--").slice(0,5))+"<small>"+(s?s.minutes+" min":"")+"</small></div><div style='flex:1'><div class='name'>"+esc(c?c.name:"Cliente")+"</div><div class='muted'>"+esc(s?s.name:"Servizio")+"</div><div style='margin-top:8px;display:flex;gap:6px;flex-wrap:wrap'><span class='chip'>"+st+"</span><span class='chip "+(due>0.01?"debt":"paid")+"'>"+(due>0.01?"Deve "+euro(due):euro(a.price||0))+"</span></div></div></div>"+actions+"</div>";
+  return "<div class='card"+(opts.now?" now":"")+"'>"+(late?"<div class='chip late' style='margin-bottom:8px'>Sta aspettando</div>":"")+"<div class='apt' onclick='openApt(\""+id+"\")'><div class='timebox'>"+esc((a.time||"--:--").slice(0,5))+"<small>"+mins(a)+" min</small></div><div style='flex:1'><div class='name'>"+esc(c?c.name:"Cliente")+"</div><div class='muted'>"+esc(s?s.name:"Servizio")+"</div><div style='margin-top:8px;display:flex;gap:6px;flex-wrap:wrap'><span class='chip'>"+st+"</span><span class='chip "+(due>0.01?"debt":"paid")+"'>"+(due>0.01?"Deve "+euro(due):euro(a.price||0))+"</span></div></div></div>"+actions+"</div>";
 }
 function vToday(){
   const list=apts(today());
@@ -41,13 +41,17 @@ function vToday(){
   }
   return html;
 }
+function calToggle(){
+  return "<div class='filters' style='padding-bottom:8px'><button type='button' class='"+(calView!=="month"?"on":"")+"' onclick='setCal(\"week\")'>Settimana</button><button type='button' class='"+(calView==="month"?"on":"")+"' onclick='setCal(\"month\")'>Mese</button></div>";
+}
 function vAgenda(){
   if(!selectedDate) selectedDate=today();
+  if(calView==="month") return vMonth();
   const days=weekDays(selectedDate);
   const start=parseISO(days[0]);
   const end=parseISO(days[6]);
   const label=start.toLocaleDateString("it-IT",{day:"numeric",month:"short"})+" – "+end.toLocaleDateString("it-IT",{day:"numeric",month:"short"});
-  let html="<div class='card'><div class='week-nav'><button type='button' class='btn btn-ghost btn-sm' onclick='shiftW(-1)'>←</button><strong style='flex:1;text-align:center'>"+label+"</strong><button type='button' class='btn btn-ghost btn-sm' onclick='shiftW(1)'>→</button></div></div>";
+  let html=calToggle()+"<div class='card'><div class='week-nav'><button type='button' class='btn btn-ghost btn-sm' onclick='shiftW(-1)'>←</button><strong style='flex:1;text-align:center'>"+label+"</strong><button type='button' class='btn btn-ghost btn-sm' onclick='shiftW(1)'>→</button></div></div>";
   const hours=["09:00","10:00","11:00","12:00","14:00","15:00","16:00","17:00","18:00"];
   days.forEach(function(iso){
     const list=allApts(iso);
@@ -57,13 +61,42 @@ function vAgenda(){
       const found=list.find(a=>(a.time||"").slice(0,5)===hh);
       if(found){
         const c=C(found.clientId);
-        html+="<div class='slot' onclick='openApt(\""+found.id+"\")'><span>"+hh+" · "+esc(c?c.name:"Cliente")+"</span><span class='tiny'>"+(found.status==="done"?"Fatta":found.status==="cancelled"?"Annullata":"")+"</span></div>";
+        html+="<div class='slot' onclick='openApt(\""+found.id+"\")'><span>"+hh+" · "+esc(c?c.name:"Cliente")+" · "+mins(found)+" min</span><span class='tiny'>"+(found.status==="done"?"Fatta":found.status==="cancelled"?"Annullata":"")+"</span></div>";
       } else {
         html+="<div class='slot empty' onclick='newAt(\""+iso+"\",\""+hh+"\")'>"+hh+" · libero</div>";
       }
     });
     html+="<button type='button' class='btn btn-soft btn-sm' style='width:100%;margin-top:8px' onclick='newAt(\""+iso+"\",\"10:00\")'>+ In questo giorno</button></div>";
   });
+  return html;
+}
+function vMonth(){
+  const dt=parseISO(selectedDate||today());
+  const y=dt.getFullYear(), m=dt.getMonth();
+  const first=new Date(y,m,1);
+  const pad=(first.getDay()+6)%7;
+  const dim=new Date(y,m+1,0).getDate();
+  const title=first.toLocaleDateString("it-IT",{month:"long",year:"numeric"});
+  let html=calToggle()+"<div class='card'><div class='week-nav'><button type='button' class='btn btn-ghost btn-sm' onclick='shiftM(-1)'>←</button><strong style='flex:1;text-align:center;text-transform:capitalize'>"+title+"</strong><button type='button' class='btn btn-ghost btn-sm' onclick='shiftM(1)'>→</button></div>";
+  html+="<div style='display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-weight:800;color:#5C3D45;font-size:13px;margin-bottom:6px'><div>L</div><div>M</div><div>M</div><div>G</div><div>V</div><div>S</div><div>D</div></div>";
+  html+="<div style='display:grid;grid-template-columns:repeat(7,1fr);gap:4px'>";
+  for(let i=0;i<pad;i++) html+="<div></div>";
+  for(let d=1;d<=dim;d++){
+    const iso=ymd(new Date(y,m,d));
+    const n=allApts(iso).length;
+    const sel=iso===selectedDate;
+    const tod=iso===today();
+    html+="<button type='button' onclick='pickDay(\""+iso+"\")' style='border:"+(sel?"3px solid #6B2740":"1px solid #E4C5CD")+";background:"+(tod?"#F3D7DE":"#fff")+";border-radius:14px;padding:8px 2px;min-height:52px'><div style='font-weight:900'>"+d+"</div>"+(n?"<div style='font-size:12px;color:#6B2740;font-weight:800'>"+n+"</div>":"")+"</button>";
+  }
+  html+="</div></div>";
+  const list=allApts(selectedDate);
+  html+="<div class='card'><div class='name' style='text-transform:capitalize;margin-bottom:8px'>"+ndl(selectedDate)+"</div>";
+  if(!list.length) html+="<p class='muted'>Nessun appuntamento.</p>";
+  else list.forEach(function(a){
+    const c=C(a.clientId);
+    html+="<div class='slot' onclick='openApt(\""+a.id+"\")'><span>"+esc((a.time||"").slice(0,5))+" · "+esc(c?c.name:"Cliente")+"</span><span class='tiny'>"+mins(a)+" min</span></div>";
+  });
+  html+="<button type='button' class='btn btn-soft' style='width:100%;margin-top:10px' onclick='newAt(\""+selectedDate+"\",\"10:00\")'>+ In questo giorno</button></div>";
   return html;
 }
 function shiftW(k){const dt=parseISO(startOfWeek(selectedDate||today()));dt.setDate(dt.getDate()+k*7);selectedDate=ymd(dt);render()}
