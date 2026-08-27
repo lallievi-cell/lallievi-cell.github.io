@@ -70,7 +70,7 @@ function vAgenda(){
   days.forEach(function(iso){
     const list=allApts(iso);
     const isTod=iso===today();
-    html+="<div class='card daycard"+(isTod?" now":"")+"'><div class='row'><div class='name' style='text-transform:capitalize'>"+nd(iso)+"</div>"+(list.length?"<span class='chip'>"+list.length+"</span>":"<span class='tiny'>Libero</span>")+"</div>";
+    html+="<div class='card daycard"+(isTod?" now":"")+"' "+(isTod?"id='day-today'":"")+"><div class='row'><div class='name' style='text-transform:capitalize'>"+nd(iso)+"</div>"+(list.length?"<span class='chip'>"+list.length+"</span>":"<span class='tiny'>Libero</span>")+"</div>";
     hours.forEach(function(hh){
       const found=slotApt(list,hh);
       if(found){
@@ -163,7 +163,6 @@ function vMoney(){
   const lastB=localStorage.getItem(BKEY);
   return "<div class='card'><div class='muted'>Oggi</div><div class='money' style='font-size:36px'>"+euro(todayPaid)+"</div></div>"+
     "<div class='card'><div class='muted'>Questa settimana</div><div class='money' style='font-size:32px'>"+euro(weekPaid)+"</div></div>"+
-    "<div class='card'><div class='muted'>Questo mese</div><div class='money' style='font-size:32px'>"+euro(monthPaid)+"</div></div>"+
     "<div class='card'><h3>Mi devono</h3>"+debts+"</div>"+
     "<div class='card'><h3>Di chi e</h3>"+(mov||"<p class='muted'>Nessun incasso questo mese.</p>")+"</div>"+
     "<div class='card'><h3>Copia di sicurezza</h3><p class='tiny' style='margin-bottom:10px'>"+(lastB?"Ultima copia: "+lastB:"Non hai ancora salvato una copia")+"</p><div class='grid2'><button type='button' class='btn btn-soft' onclick='exp()'>Salva copia sul telefono</button><button type='button' class='btn btn-ghost' onclick='document.getElementById(\"imp\").click()'>Rimetti la copia</button></div><input id='imp' type='file' accept='application/json' class='hidden' onchange='imp(event)'></div>";
