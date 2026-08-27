@@ -10,41 +10,46 @@
 <title>Unghie Mamma</title>
 <style>
 :root{
-  --rose:#6B2740; --rose-soft:#B85A72; --blush:#F3D7DE; --cream:#FFF7F4;
-  --ink:#1C1014; --muted:#5C3D45; --line:#E4C5CD; --ok:#1F6B3A; --bad:#A61B14;
-  --card:#fff; --shadow:0 8px 24px rgba(107,39,64,.10);
-  --radius:22px; --safe-top:env(safe-area-inset-top); --safe-bottom:env(safe-area-inset-bottom);
+  --rose:#6B2740; --blush:#F3D7DE; --cream:#FFF7F4; --ink:#1C1014;
+  --muted:#5C3D45; --line:#E4C5CD; --ok:#1F6B3A; --bad:#A61B14;
+  --late:#8A5A00; --latebg:#FFF3CC; --card:#fff;
+  --safe-top:env(safe-area-inset-top); --safe-bottom:env(safe-area-inset-bottom);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0;background:var(--cream);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-body{padding-bottom:calc(102px + var(--safe-bottom));min-height:100dvh;font-size:18px}
+html,body{margin:0;background:var(--cream);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+body{padding-bottom:calc(108px + var(--safe-bottom));min-height:100dvh;font-size:18px}
 button,input,select,textarea{font:inherit}button{cursor:pointer}h1,h2,h3,p{margin:0}
-.top{position:sticky;top:0;z-index:20;background:#6B2740;color:#fff;padding:calc(16px + var(--safe-top)) 18px 18px}
-.top h1{font-size:28px;font-weight:800;letter-spacing:-.02em}
-.top p{opacity:.92;font-size:16px;margin-top:4px;font-weight:600}
+.top{position:sticky;top:0;z-index:20;background:#6B2740;color:#fff;padding:calc(16px + var(--safe-top)) 18px 16px}
+.top h1{font-size:28px;font-weight:800}.top p{opacity:.92;font-size:16px;margin-top:4px;font-weight:600}
 .wrap{padding:16px;max-width:720px;margin:0 auto}
-.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;border:1px solid #f0dde2}
+.card{background:#fff;border-radius:22px;box-shadow:0 8px 24px rgba(107,39,64,.10);padding:16px;margin-bottom:12px;border:1px solid #f0dde2}
 .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .muted{color:var(--muted);font-size:16px}.tiny{font-size:14px;color:var(--muted)}
-.btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:16px;padding:16px 16px;font-weight:800;font-size:17px;text-decoration:none;text-align:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:16px;padding:14px 14px;font-weight:800;font-size:16px;text-decoration:none;text-align:center}
 .btn-primary{background:var(--rose);color:#fff;width:100%}
-.btn-ok{background:#1F6B3A;color:#fff}
+.btn-ok{background:var(--ok);color:#fff}
 .btn-soft{background:var(--blush);color:var(--rose)}
 .btn-ghost{background:#fff;color:var(--rose);border:2px solid var(--line)}
 .btn-bad{background:#FDECEC;color:var(--bad)}
-.btn-sm{padding:12px 12px;font-size:16px;border-radius:14px}
+.btn-sm{padding:12px 10px;font-size:15px;border-radius:14px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.chip{display:inline-flex;background:var(--blush);color:var(--rose);border-radius:999px;padding:7px 12px;font-size:15px;font-weight:750}
-.chip.debt{background:#FDECEC;color:var(--bad)}.chip.paid{background:#E5F6EA;color:var(--ok)}
+.grid4{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chip{display:inline-flex;background:var(--blush);color:var(--rose);border-radius:999px;padding:6px 11px;font-size:14px;font-weight:750}
+.chip.debt{background:#FDECEC;color:var(--bad)}.chip.paid{background:#E5F6EA;color:var(--ok)}.chip.late{background:var(--latebg);color:var(--late)}
 input,select,textarea{width:100%;border:2px solid var(--line);background:#fff;border-radius:16px;padding:14px 13px;font-size:18px}
-textarea{min-height:96px}label{display:block;font-size:15px;font-weight:800;color:var(--muted);margin:14px 0 6px}
-.search{margin-bottom:12px;font-size:18px;padding:16px 14px}
+textarea{min-height:90px}label{display:block;font-size:15px;font-weight:800;color:var(--muted);margin:14px 0 6px}
+.search{margin-bottom:10px;font-size:18px;padding:16px 14px}
+.filters{display:flex;gap:8px;overflow:auto;padding-bottom:10px}
+.filters button{flex:0 0 auto;border:2px solid var(--line);background:#fff;color:var(--muted);border-radius:999px;padding:10px 14px;font-weight:800;font-size:15px}
+.filters button.on{background:var(--rose);color:#fff;border-color:var(--rose)}
 .apt{display:flex;gap:12px;align-items:flex-start}
 .timebox{min-width:74px;background:var(--blush);color:var(--rose);border-radius:16px;text-align:center;padding:12px 6px;font-weight:900;font-size:20px;line-height:1.1}
 .timebox small{display:block;font-weight:700;font-size:13px;margin-top:4px}
 .name{font-weight:800;font-size:20px;line-height:1.2}
+.now{border:3px solid var(--rose)}
+.now .name{font-size:24px}
 .list-item{padding:14px 0;border-bottom:1px solid var(--line)}.list-item:last-child{border-bottom:0}
-.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:10px 6px calc(10px + var(--safe-bottom))}
 .nav button{background:none;border:0;color:var(--muted);font-size:13px;font-weight:800;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px}
 .nav button.active{color:var(--rose)}.nav .ico{font-size:22px}
@@ -52,23 +57,30 @@ textarea{min-height:96px}label{display:block;font-size:15px;font-weight:800;colo
 .modal-bg.show{display:flex}
 .modal{background:#fff;width:100%;max-width:720px;max-height:92dvh;overflow:auto;border-radius:28px 28px 0 0;padding:18px 16px calc(24px + var(--safe-bottom))}
 .handle{width:44px;height:5px;background:#E5C9D0;border-radius:99px;margin:0 auto 12px}
-.empty{text-align:center;padding:32px 10px;color:var(--muted)}.empty .big{font-size:46px;margin-bottom:8px}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
-.cal-grid .dow{font-size:13px;color:var(--muted);font-weight:800;padding:8px 0}
-.day{border:0;background:transparent;border-radius:14px;padding:12px 0;font-weight:800;font-size:16px}
-.day.has{background:var(--blush);color:var(--rose)}.day.sel{background:var(--rose);color:#fff}.day.today{outline:2px solid var(--rose-soft)}
-.fab{position:fixed;right:16px;bottom:calc(116px + var(--safe-bottom));z-index:25;width:66px;height:66px;border-radius:50%;border:0;background:var(--rose);color:#fff;font-size:34px;box-shadow:0 12px 24px rgba(107,39,64,.30)}
-.money{font-weight:900}.hidden{display:none!important}
-h2{font-size:24px}h3{font-size:18px}
+.empty{text-align:center;padding:28px 10px;color:var(--muted)}.empty .big{font-size:46px;margin-bottom:8px}
+.week-nav{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.daycard{margin-bottom:10px}
+.slot{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line);font-weight:700}
+.slot.empty{color:var(--muted);font-weight:650}
+.avatar{width:48px;height:48px;border-radius:50%;background:var(--blush);color:var(--rose);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;flex-shrink:0;overflow:hidden;object-fit:cover}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.photo{width:100%;border-radius:16px;margin-top:10px;max-height:220px;object-fit:cover}
+.money{font-weight:900}
+.fab{position:fixed;right:16px;bottom:calc(118px + var(--safe-bottom));z-index:25;border:0;background:var(--rose);color:#fff;font-size:16px;font-weight:800;border-radius:999px;padding:16px 18px;box-shadow:0 12px 24px rgba(107,39,64,.30)}
+.toast{position:fixed;left:50%;bottom:calc(128px + var(--safe-bottom));transform:translateX(-50%) translateY(20px);background:#1C1014;color:#fff;padding:12px 18px;border-radius:999px;font-weight:800;opacity:0;pointer-events:none;z-index:50;transition:.2s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.hidden{display:none!important}h2{font-size:24px}h3{font-size:18px}
+.warn{color:var(--bad);font-weight:800}
 </style>
 </head>
 <body>
 <header class="top"><h1 id="title">Oggi</h1><p id="subtitle">I tuoi appuntamenti</p></header>
 <main class="wrap">
 <input id="clientSearch" class="search hidden" type="search" enterkeyhint="search" autocomplete="off" placeholder="Cerca cliente o telefono"/>
+<div id="filters" class="filters hidden"></div>
 <div id="app"></div>
 </main>
-<button class="fab" id="fab" type="button" onclick="openNew()">+</button>
+<button class="fab" id="fab" type="button" onclick="openNew()">+ Appuntamento</button>
 <nav class="nav">
 <button type="button" class="active" data-tab="oggi" onclick="go('oggi')"><span class="ico">📅</span>Oggi</button>
 <button type="button" data-tab="agenda" onclick="go('agenda')"><span class="ico">🗓️</span>Agenda</button>
@@ -76,6 +88,7 @@ h2{font-size:24px}h3{font-size:18px}
 <button type="button" data-tab="soldi" onclick="go('soldi')"><span class="ico">💶</span>Soldi</button>
 </nav>
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast">Salvato.</div>
 <script src="./app.js"></script>
 <script src="./app2.js"></script>
 <script src="./app3.js"></script>
