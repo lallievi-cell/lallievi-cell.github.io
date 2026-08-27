@@ -19,7 +19,7 @@ if(!db.services||!db.services.length)db.services=SV.slice()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(db));toast("Salvato.")}catch(e){alert("Salvataggio non riuscito")}}
 function toast(msg){const el=document.getElementById("toast");if(!el)return;el.textContent=msg||"Salvato.";el.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(function(){el.classList.remove("show")},1400)}
 function euro(n){return(Number(n)||0).toLocaleString("it-IT",{style:"currency",currency:"EUR"})}
-function esc(s){return String(s||"").replace(/[&<>"]/g,function(ch){return {"&":"&","<":"<",">":">","\"":"""}[ch]})}
+function esc(s){return String(s||"").replace(/[&<>"]/g,function(ch){return "&#"+ch.charCodeAt(0)+";"})}
 function C(id){return db.clients.find(x=>x.id===id)}
 function S(id){return (db.services||[]).find(x=>x.id===id)}
 function apts(date){return db.appointments.filter(a=>a.date===date&&a.status!=="deleted"&&a.status!=="cancelled").sort((a,b)=>(a.time||"").localeCompare(b.time||""))}
