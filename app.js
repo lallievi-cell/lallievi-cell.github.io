@@ -23,6 +23,9 @@ function esc(s){return String(s||"").replace(/[&<>"]/g,function(ch){return "&#"+
 function C(id){return db.clients.find(x=>x.id===id)}
 function S(id){return (db.services||[]).find(x=>x.id===id)}
 function mins(a){if(a&&+a.minutes)return +a.minutes;const s=S(a&&a.serviceId);return (s&&s.minutes)||60}
+function toMin(t){const p=String(t||"0:0").split(":");return (+p[0]||0)*60+(+p[1]||0)}
+function slotApt(list,hh){const slot=toMin(hh);return list.find(function(a){if(a.status==="cancelled")return false;const start=toMin(a.time);return slot>=start&&slot<start+mins(a)})}
+function overlaps(date,time,minutes,exceptId){const start=toMin(time),end=start+(+minutes||60);return db.appointments.some(function(a){if(a.id===exceptId||a.date!==date||a.status==="cancelled"||a.status==="deleted")return false;const s=toMin(a.time),e=s+mins(a);return start<e&&end>s})}
 function apts(date){return db.appointments.filter(a=>a.date===date&&a.status!=="deleted"&&a.status!=="cancelled").sort((a,b)=>(a.time||"").localeCompare(b.time||""))}
 function allApts(date){return db.appointments.filter(a=>a.date===date&&a.status!=="deleted").sort((a,b)=>(a.time||"").localeCompare(b.time||""))}
 function bal(id){return db.appointments.filter(a=>a.clientId===id&&a.status==="done").reduce((s,a)=>s+(+a.price||0)-(+a.paid||0),0)}
