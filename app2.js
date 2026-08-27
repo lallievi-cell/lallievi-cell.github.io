@@ -19,14 +19,28 @@ function vToday(){
   const next=list.filter(a=>a.status==="booked");
   const done=list.filter(a=>a.status==="done");
   const recall=toRecall();
+  const tm=apts(tomorrow()).filter(a=>a.status==="booked");
   let html="";
   if(next.length){
     html+=card(next[0],{today:1,now:1});
     html+=next.slice(1).map(function(a){return card(a,{today:1})}).join("");
   } else {
-    html+="<div class='card empty'><div class='big'>💅</div><p>Nessun appuntamento oggi.</p><p class='tiny' style='margin-top:8px'>Tocca + Appuntamento per aggiungerne uno.</p></div>";
+    html+="<div class='card empty'><div class='big'>💅</div><p>Nessun appuntamento oggi.</p><p class='tiny' style='margin-top:8px'>Tocca + Prenota in alto per aggiungerne uno.</p></div>";
   }
   if(done.length) html+="<p class='muted' style='margin:8px 4px'>Gia fatte</p>"+done.map(function(a){return card(a)}).join("");
+  if(tm.length){
+    html+="<div class='card'><h3>Domani — mandagli il messaggio</h3><p class='tiny' style='margin:6px 0 8px'>Tocca WhatsApp, il testo e gia pronto. Poi Invio.</p>";
+    tm.forEach(function(a){
+      const c=C(a.clientId);
+      const wa=c?waLink(c.phone,msgRemind(a)):"";
+      html+="<div class='list-item'><div class='name'>"+esc(c?c.name:"Cliente")+"</div><div class='tiny'>"+esc((a.time||"").slice(0,5))+" · "+mins(a)+" min</div>";
+      if(a.reminded) html+="<div class='chip paid' style='margin-top:8px'>Gia scritto</div>";
+      else if(wa) html+="<a class='btn btn-soft' style='width:100%;margin-top:10px' href='"+wa+"' onclick='markReminded(\""+a.id+"\")'>WhatsApp promemoria</a>";
+      else html+="<p class='warn tiny' style='margin-top:8px'>Manca il numero</p>";
+      html+="</div>";
+    });
+    html+="</div>";
+  }
   if(recall.length){
     const show=recall.slice(0,3);
     html+="<div class='card'><h3>Da richiamare</h3>";
