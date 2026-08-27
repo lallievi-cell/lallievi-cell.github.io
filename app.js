@@ -13,6 +13,7 @@ function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2
 function pad(n){return String(n).padStart(2,"0")}
 function ymd(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
 function today(){return ymd(new Date())}
+function tomorrow(){const d=parseISO(today());d.setDate(d.getDate()+1);return ymd(d)}
 function parseISO(iso){const p=(iso||"").split("-");return new Date(+p[0],(+p[1]||1)-1,+p[2]||1)}
 function load(){try{db=Object.assign({clients:[],appointments:[],services:SV},JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){db={clients:[],appointments:[],services:SV}}
 if(!db.services||!db.services.length)db.services=SV.slice()}
@@ -39,7 +40,7 @@ function phoneDigits(p){return String(p||"").replace(/\D/g,"")}
 function waNum(p){const d=phoneDigits(p);if(!d)return"";return d.length<=10?"39"+d:d}
 function waLink(phone,text){const n=waNum(phone);if(!n)return"";return "https://wa.me/"+n+"?text="+encodeURIComponent(text)}
 function firstName(c){return ((c&&c.name)||"tesoro").split(" ")[0]}
-function msgRemind(a){const c=C(a.clientId);return "Ciao "+firstName(c)+", ti aspetto "+ndl(a.date)+" alle "+(a.time||"").slice(0,5)+" per le unghie"}
+function msgRemind(a){const c=C(a.clientId);return "Ciao "+firstName(c)+", ti aspetto "+ndl(a.date)+" alle "+(a.time||"").slice(0,5)+" per le unghie. A domani!"}
 function msgRecall(c){return "Ciao "+firstName(c)+", sono passate un po' di settimane dall'ultima volta. Vuoi prenotare per le unghie?"}
 function msgDebt(c,b){return "Ciao "+firstName(c)+", ti ricordo i "+euro(b)+" dell'ultima volta. Grazie!"}
 function toRecall(){return db.clients.filter(function(c){const lv=last(c.id);if(!lv)return false;const weeks=c.recallWeeks||3;const dt=parseISO(lv.date);dt.setDate(dt.getDate()+weeks*7);if(ymd(dt)>today())return false;return !db.appointments.some(a=>a.clientId===c.id&&a.status==="booked"&&a.date>=today())})}
@@ -49,6 +50,7 @@ function isLate(a){if(a.status!=="booked"||a.date!==today())return false;const p
 function initial(c){return ((c&&c.name)||"?").trim().charAt(0).toUpperCase()}
 function setCal(v){calView=v;if(tab==="agenda"){document.getElementById("subtitle").textContent=v==="month"?"Mese":"Settimana";render()}}
 function shiftM(k){const dt=parseISO(selectedDate||today());dt.setMonth(dt.getMonth()+k);selectedDate=ymd(dt);render()}
+function markReminded(id){const a=db.appointments.find(x=>x.id===id);if(!a)return;a.reminded=true;save();render()}
 function go(t){
   tab=t;
   document.querySelectorAll(".nav button").forEach(function(b){b.classList.toggle("active",b.dataset.tab===t)});
