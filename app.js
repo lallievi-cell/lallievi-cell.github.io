@@ -8,7 +8,7 @@ const SV=[
  {id:"rimozione",name:"Togliere unghie",minutes:30,price:15},
  {id:"pedicure",name:"Piedi",minutes:60,price:30}
 ];
-let db,tab="oggi",selectedDate,q="",cFilter="all";
+let db,tab="oggi",selectedDate,q="",cFilter="all",calView="week";
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function pad(n){return String(n).padStart(2,"0")}
 function ymd(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
@@ -22,6 +22,7 @@ function euro(n){return(Number(n)||0).toLocaleString("it-IT",{style:"currency",c
 function esc(s){return String(s||"").replace(/[&<>"]/g,function(ch){return "&#"+ch.charCodeAt(0)+";"})}
 function C(id){return db.clients.find(x=>x.id===id)}
 function S(id){return (db.services||[]).find(x=>x.id===id)}
+function mins(a){if(a&&+a.minutes)return +a.minutes;const s=S(a&&a.serviceId);return (s&&s.minutes)||60}
 function apts(date){return db.appointments.filter(a=>a.date===date&&a.status!=="deleted"&&a.status!=="cancelled").sort((a,b)=>(a.time||"").localeCompare(b.time||""))}
 function allApts(date){return db.appointments.filter(a=>a.date===date&&a.status!=="deleted").sort((a,b)=>(a.time||"").localeCompare(b.time||""))}
 function bal(id){return db.appointments.filter(a=>a.clientId===id&&a.status==="done").reduce((s,a)=>s+(+a.price||0)-(+a.paid||0),0)}
@@ -42,13 +43,14 @@ function toRecall(){return db.clients.filter(function(c){const lv=last(c.id);if(
 function startOfWeek(iso){const dt=parseISO(iso);const day=(dt.getDay()+6)%7;dt.setDate(dt.getDate()-day);return ymd(dt)}
 function weekDays(iso){const start=parseISO(startOfWeek(iso));const out=[];for(let i=0;i<7;i++){const d=new Date(start);d.setDate(start.getDate()+i);out.push(ymd(d))}return out}
 function isLate(a){if(a.status!=="booked"||a.date!==today())return false;const p=(a.time||"00:00").split(":");const t=new Date();t.setHours(+p[0]||0,(+p[1]||0)+10,0,0);return new Date()>t}
-function nextBooked(){return apts(today()).filter(a=>a.status==="booked")[0]}
 function initial(c){return ((c&&c.name)||"?").trim().charAt(0).toUpperCase()}
+function setCal(v){calView=v;if(tab==="agenda"){document.getElementById("subtitle").textContent=v==="month"?"Mese":"Settimana";render()}}
+function shiftM(k){const dt=parseISO(selectedDate||today());dt.setMonth(dt.getMonth()+k);selectedDate=ymd(dt);render()}
 function go(t){
   tab=t;
   document.querySelectorAll(".nav button").forEach(function(b){b.classList.toggle("active",b.dataset.tab===t)});
   const n=db.clients.length;
-  const T={oggi:["Oggi",ndl(today())],agenda:["Agenda","Settimana"],clienti:["Clienti",n+(n===1?" scheda":" schede")],soldi:["Soldi","Incassi e crediti"]};
+  const T={oggi:["Oggi",ndl(today())],agenda:["Agenda",calView==="month"?"Mese":"Settimana"],clienti:["Clienti",n+(n===1?" scheda":" schede")],soldi:["Soldi","Incassi e crediti"]};
   document.getElementById("title").textContent=T[t][0];
   document.getElementById("subtitle").textContent=T[t][1];
   const fab=document.getElementById("fab");
@@ -68,3 +70,4 @@ function payOff(id){db.appointments.forEach(function(a){if(a.clientId===id&&a.st
 function pickDay(iso){selectedDate=iso;if(tab!=="agenda")go("agenda");else render()}
 function pickClient(id){formApt();setTimeout(function(){const s=document.getElementById("f_c");if(s)s.value=id},0)}
 function newAt(iso,time){selectedDate=iso;formApt(null,time)}
+function fillService(){const s=S(document.getElementById("f_s").value);if(!s)return;document.getElementById("f_p").value=s.price;document.getElementById("f_min").value=s.minutes}
