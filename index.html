@@ -7,12 +7,13 @@
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Unghie Mamma"/>
 <meta name="theme-color" content="#6B2740"/>
+<meta http-equiv="Cache-Control" content="no-cache"/>
 <title>Unghie Mamma</title>
 <style>
 :root{
   --rose:#6B2740; --blush:#F3D7DE; --cream:#FFF7F4; --ink:#1C1014;
   --muted:#5C3D45; --line:#E4C5CD; --ok:#1F6B3A; --bad:#A61B14;
-  --late:#8A5A00; --latebg:#FFF3CC; --card:#fff;
+  --late:#8A5A00; --latebg:#FFF3CC;
   --safe-top:env(safe-area-inset-top); --safe-bottom:env(safe-area-inset-bottom);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -62,7 +63,7 @@ textarea{min-height:90px}label{display:block;font-size:15px;font-weight:800;colo
 .daycard{margin-bottom:10px}
 .slot{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line);font-weight:700}
 .slot.empty{color:var(--muted);font-weight:650}
-.avatar{width:48px;height:48px;border-radius:50%;background:var(--blush);color:var(--rose);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;flex-shrink:0;overflow:hidden;object-fit:cover}
+.avatar{width:48px;height:48px;border-radius:50%;background:var(--blush);color:var(--rose);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;flex-shrink:0;overflow:hidden}
 .avatar img{width:100%;height:100%;object-fit:cover}
 .photo{width:100%;border-radius:16px;margin-top:10px;max-height:220px;object-fit:cover}
 .money{font-weight:900}
@@ -89,8 +90,8 @@ textarea{min-height:90px}label{display:block;font-size:15px;font-weight:800;colo
 </nav>
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
 <div class="toast" id="toast">Salvato.</div>
-<script src="./app.js"></script>
-<script src="./app2.js"></script>
-<script src="./app3.js"></script>
+<script src="./app.js?v=5"></script>
+<script src="./app2.js?v=5"></script>
+<script src="./app3.js?v=5"></script>
 </body>
 </html>
