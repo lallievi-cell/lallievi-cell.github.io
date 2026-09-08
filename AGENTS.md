@@ -12,8 +12,8 @@
   - `lallievi-cell/unghie-mamma`: il repository iniziale.
   - `lallievi-cell/lallievi-cell.github.io`: **il repository principale di produzione** pubblicato live su GitHub Pages a `https://lallievi-cell.github.io/`.
 - **Link Live Ufficiale**:
-  👉 **`https://lallievi-cell.github.io/`** (con cache-bust `v13`, scritte grandi, tasto "+ Prenota", WhatsApp rapido, ecc.).
-- **Dove sono salvati i dati reali**: I dati (nomi clienti, numeri, storico trattamenti, appuntamenti, debiti e incassi) risiedono nel `localStorage` del browser dell'iPhone, sotto la chiave `unghie-mamma-v1`.
+  👉 **`https://lallievi-cell.github.io/`** (con cache-bust `v17`, scritte grandi, tasto "+ Prenota", WhatsApp rapido, spese e guadagno netto, ecc.).
+- **Dove sono salvati i dati reali**: I dati (nomi clienti, numeri, storico trattamenti, appuntamenti, debiti, spese e incassi) risiedono nel `localStorage` del browser dell'iPhone, sotto la chiave `unghie-mamma-v1`.
 
 ---
 
@@ -30,10 +30,13 @@
        ],
        "services": [
          { "id": "ricostruzione", "name": "Ricostruzione unghie", "minutes": 90, "price": 40 }
+       ],
+       "expenses": [
+         { "id": "...", "amount": 45.0, "date": "YYYY-MM-DD", "category": "materiali|attrezzatura|varie", "desc": "Top coat e gel" }
        ]
      }
      ```
-   - Qualsiasi nuovo campo deve essere facoltativo con fallback di default retrocompatibili.
+   - Qualsiasi nuovo campo deve essere facoltativo con fallback di default retrocompatibili (`db.expenses = db.expenses || []`).
 2. **Attenzione al cambio di dominio (Migrazione su GitHub Pages)**:
    - Il dominio previsto definitivo è `https://lallievi-cell.github.io/unghie-mamma/`.
    - **ATTENZIONE**: Poiché il browser isola il `localStorage` per dominio (Same-Origin Policy), aprendo il nuovo link i dati **NON** si trasferiranno da soli.
