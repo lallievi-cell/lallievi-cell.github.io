@@ -76,14 +76,19 @@ function vAgenda(){
   days.forEach(function(iso,idx){
     const dt=parseISO(iso);
     const dNum=dt.getDate();
-    const dayCount=allApts(iso).filter(function(a){return a.status!=="cancelled"}).length;
+    const dayApts=allApts(iso).filter(function(a){return a.status!=="cancelled"});
+    const totalMins=dayApts.reduce(function(acc,a){return acc+mins(a)},0);
+    const loadPct=Math.min(100,Math.round(totalMins/720*100));
+    const hoursDec=Math.round(totalMins/60*10)/10;
+    const loadTxt=totalMins?(hoursDec%1===0?Math.floor(hoursDec)+"h":hoursDec+"h"):"libero";
     const isTod=iso===today();
     const isSel=iso===selectedDate;
-    const cls=["day-btn",isTod?"today":"",dayCount?"has":"",isSel?"sel":""].filter(Boolean).join(" ");
+    const cls=["day-btn",isTod?"today":"",dayApts.length?"has":"",isSel?"sel":""].filter(Boolean).join(" ");
     strip+="<button type='button' class='"+cls+"' onclick='scrollToDay(\""+iso+"\")'>"+
       "<div style='opacity:0.85'>"+dayInitials[idx]+"</div>"+
       "<div class='d-num'>"+dNum+"</div>"+
-      (dayCount?"<div class='d-dot'></div>":"<div style='height:9px'></div>")+
+      "<div class='d-load-bar'><div class='d-load-fill' style='width:"+loadPct+"%'></div></div>"+
+      "<div class='d-load-txt'>"+loadTxt+"</div>"+
       "</button>";
   });
   strip+="</div>";
@@ -92,27 +97,63 @@ function vAgenda(){
 
   days.forEach(function(iso){
     const list=allApts(iso).sort(function(a,b){return (a.time||"").localeCompare(b.time||"")});
+    const activeList=list.filter(function(a){return a.status!=="cancelled"});
     const isTod=iso===today();
     const dt=parseISO(iso);
     const dayTitle=dt.toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"});
-    const activeCount=list.filter(function(a){return a.status!=="cancelled"}).length;
+    const dayMins=activeList.reduce(function(acc,a){return acc+mins(a)},0);
+    const freeMins=Math.max(0,720-dayMins);
 
     let countBadge="";
     if(isTod){
       countBadge="<span class='chip' style='background:var(--rose);color:#fff;font-weight:850'>OGGI</span>";
-    } else if(activeCount){
-      countBadge="<span class='chip'>"+activeCount+(activeCount===1?" appuntamento":" appuntamenti")+"</span>";
+    } else if(activeList.length){
+      countBadge="<span class='chip'>"+activeList.length+(activeList.length===1?" appuntam.":" appuntam.")+"</span>";
     } else {
-      countBadge="<span class='tiny'>Libero</span>";
+      countBadge="<span class='tiny' style='font-weight:800;color:var(--ok)'>Tutto libero</span>";
     }
 
-    html+="<div class='card daycard"+(isTod?" now":"")+"' id='day-"+iso+"'>"+
-      "<div class='row' style='padding-bottom:6px;border-bottom:1px solid var(--line)'><div class='name' style='text-transform:capitalize;font-size:20px'>"+dayTitle+"</div>"+countBadge+"</div>";
+    // Costruzione Timeline orizzontale 08:00 - 20:00
+    let barBlocks="";
+    activeList.forEach(function(a){
+      const sMin=toMin(a.time);
+      const eMin=sMin+mins(a);
+      const clampS=Math.max(480,Math.min(1200,sMin));
+      const clampE=Math.max(480,Math.min(1200,eMin));
+      if(clampE>clampS){
+        const left=((clampS-480)/720*100).toFixed(1);
+        const width=Math.max(2,((clampE-clampS)/720*100)).toFixed(1);
+        const cls=a.status==="done"?"timeline-block done":"timeline-block";
+        const cName=(C(a.clientId)||{}).name||"Cliente";
+        barBlocks+="<div class='"+cls+"' style='left:"+left+"%;width:"+width+"%' onclick='openApt(\""+a.id+"\")' title='"+esc(cName)+" ("+(a.time||"").slice(0,5)+")'></div>";
+      }
+    });
 
-    if(!list.length){
-      html+="<div class='day-empty'>Nessun appuntamento · Tutta libera</div>";
+    const hoursWorked=Math.round(dayMins/60*10)/10;
+    const subLabel=dayMins?(hoursWorked%1===0?Math.floor(hoursWorked):hoursWorked)+"h occupate · "+fmtDuration(freeMins):"<span style='color:var(--ok)'>Tutto libero (12 ore)</span>";
+
+    const timelineHtml="<div class='timeline-box'>"+
+      "<div class='row' style='margin-bottom:6px;font-size:13px;font-weight:800'>"+
+        "<span class='muted'>Nastro orario 08:00 – 20:00</span>"+
+        "<span>"+subLabel+"</span>"+
+      "</div>"+
+      "<div class='timeline-bar'>"+barBlocks+"</div>"+
+      "<div class='timeline-labels'>"+
+        "<span>08:00</span><span>11:00</span><span>14:00</span><span>17:00</span><span>20:00</span>"+
+      "</div>"+
+    "</div>";
+
+    html+="<div class='card daycard"+(isTod?" now":"")+"' id='day-"+iso+"'>"+
+      "<div class='row' style='padding-bottom:6px;border-bottom:1px solid var(--line)'><div class='name' style='text-transform:capitalize;font-size:20px'>"+dayTitle+"</div>"+countBadge+"</div>"+
+      timelineHtml;
+
+    if(!activeList.length){
+      html+="<div class='day-empty'>"+
+        "<div style='font-size:16px;font-weight:800;color:var(--ok)'>🎉 Tutta la giornata libera (08:00 – 20:00)</div>"+
+        "<div class='tiny' style='margin-top:4px'>12 ore disponibili per prendere appuntamenti</div>"+
+      "</div>";
     } else {
-      let prevEnd=null;
+      let cursor=480; // 08:00
       list.forEach(function(a){
         const startTime=(a.time||"10:00").slice(0,5);
         const startMin=toMin(startTime);
@@ -120,15 +161,19 @@ function vAgenda(){
         const endMin=startMin+duration;
         const endTime=minToTime(endMin);
 
-        if(prevEnd!==null && startMin - prevEnd >= 30 && a.status!=="cancelled"){
-          const gapStart=minToTime(prevEnd);
-          html+="<div class='gap-item' onclick='newAt(\""+iso+"\",\""+gapStart+"\")'>"+
-            "<span>⏱️ "+gapStart+" – "+startTime+" libero</span>"+
-            "<span class='chip' style='background:#fff;font-size:12px;padding:3px 8px;color:var(--rose)'>+ Prenota</span>"+
-            "</div>";
+        // Buco libero prima di questo appuntamento
+        if(a.status!=="cancelled" && startMin>cursor){
+          const gapMins=startMin-cursor;
+          if(gapMins>=15){
+            const gapStart=minToTime(cursor);
+            html+="<div class='gap-item' onclick='newAt(\""+iso+"\",\""+gapStart+"\")'>"+
+              "<div><strong>⏱️ "+gapStart+" – "+startTime+" libero</strong> <span class='tiny' style='color:var(--muted)'>("+fmtDuration(gapMins)+")</span></div>"+
+              "<span class='chip' style='background:#fff;font-size:12px;padding:4px 9px;color:var(--rose)'>+ Prenota</span>"+
+              "</div>";
+          }
         }
         if(a.status!=="cancelled"){
-          prevEnd = Math.max(prevEnd||0, endMin);
+          cursor=Math.max(cursor,endMin);
         }
 
         const c=C(a.clientId);
@@ -154,9 +199,21 @@ function vAgenda(){
           "</div>"+
         "</div>";
       });
+
+      // Buco libero dopo l'ultimo appuntamento fino alle 20:00 (1200 min)
+      if(cursor<1200){
+        const remMins=1200-cursor;
+        if(remMins>=15){
+          const gapStart=minToTime(cursor);
+          html+="<div class='gap-item' onclick='newAt(\""+iso+"\",\""+gapStart+"\")'>"+
+            "<div><strong>⏱️ "+gapStart+" – 20:00 libero</strong> <span class='tiny' style='color:var(--muted)'>("+fmtDuration(remMins)+")</span></div>"+
+            "<span class='chip' style='background:#fff;font-size:12px;padding:4px 9px;color:var(--rose)'>+ Prenota</span>"+
+            "</div>";
+        }
+      }
     }
 
-    html+="<button type='button' class='btn btn-soft btn-sm' style='width:100%;margin-top:10px' onclick='newAt(\""+iso+"\",\"10:00\")'>+ Aggiungi a "+nd(iso)+"</button></div>";
+    html+="<button type='button' class='btn btn-soft btn-sm' style='width:100%;margin-top:12px' onclick='newAt(\""+iso+"\",\"08:00\")'>+ Aggiungi a "+nd(iso)+"</button></div>";
   });
 
   return html;

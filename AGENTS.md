@@ -7,6 +7,7 @@
 
 ## 1. Contesto Reale di Produzione
 - **Utente finale**: La mamma dell'utente utilizza quotidianamente questa applicazione sul suo **iPhone** per gestire gli appuntamenti, le schede clienti e gli incassi della sua attività di ricostruzione unghie.
+- **Orari e modalità di lavoro**: Lavora nella fascia **08:00 – 20:00**, **senza pause pranzo fisse**. Prende appuntamenti in qualsiasi momento di questa fascia oraria in base alle richieste delle clienti e alla durata dei trattamenti.
 - **I due repository GitHub collegati**:
   - `lallievi-cell/unghie-mamma`: il repository iniziale.
   - `lallievi-cell/lallievi-cell.github.io`: **il repository principale di produzione** pubblicato live su GitHub Pages a `https://lallievi-cell.github.io/`.

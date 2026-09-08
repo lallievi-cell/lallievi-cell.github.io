@@ -51,6 +51,7 @@ function initial(c){return ((c&&c.name)||"?").trim().charAt(0).toUpperCase()}
 function setCal(v){calView=v;if(tab==="agenda"){document.getElementById("subtitle").textContent=v==="month"?"Mese":"Settimana";render()}}
 function shiftM(k){const dt=parseISO(selectedDate||today());dt.setMonth(dt.getMonth()+k);selectedDate=ymd(dt);render()}
 function minToTime(m){const h=Math.floor(m/60)%24,min=m%60;return pad(h)+":"+pad(min)}
+function fmtDuration(m){m=Math.round(m);if(m<60)return m+" min liberi";const h=Math.floor(m/60),rem=m%60;if(rem===0)return h===1?"1 ora libera":h+" ore libere";return h+"h "+rem+"m libere"}
 function scrollToDay(iso){selectedDate=iso;const el=document.getElementById("day-"+iso);if(el)el.scrollIntoView({behavior:"smooth",block:"start"})}
 function scrollToToday(){const el=document.getElementById("day-"+today())||document.getElementById("day-today");if(!el)return;el.scrollIntoView({behavior:"smooth",block:"start"})}
 function goToday(){selectedDate=today();render();setTimeout(scrollToToday,80)}
