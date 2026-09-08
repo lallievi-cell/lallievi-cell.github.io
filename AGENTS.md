@@ -7,9 +7,12 @@
 
 ## 1. Contesto Reale di Produzione
 - **Utente finale**: La mamma dell'utente utilizza quotidianamente questa applicazione sul suo **iPhone** per gestire gli appuntamenti, le schede clienti e gli incassi della sua attività di ricostruzione unghie.
-- **Come la usa attualmente**: L'app è stata installata sulla schermata Home dell'iPhone come WebClip tramite il seguente link:
-  `https://htmlpreview.github.io/?https://github.com/lallievi-cell/unghie-mamma/blob/main/index.html`
-- **Dove sono salvati i dati reali**: I dati (nomi clienti, numeri, storico trattamenti, appuntamenti, debiti e incassi) risiedono nel `localStorage` del browser dell'iPhone, sotto la chiave `unghie-mamma-v1`, **isolati nel dominio `htmlpreview.github.io`**.
+- **I due repository GitHub collegati**:
+  - `lallievi-cell/unghie-mamma`: il repository iniziale.
+  - `lallievi-cell/lallievi-cell.github.io`: **il repository principale di produzione** pubblicato live su GitHub Pages a `https://lallievi-cell.github.io/`.
+- **Link Live Ufficiale**:
+  👉 **`https://lallievi-cell.github.io/`** (con cache-bust `v13`, scritte grandi, tasto "+ Prenota", WhatsApp rapido, ecc.).
+- **Dove sono salvati i dati reali**: I dati (nomi clienti, numeri, storico trattamenti, appuntamenti, debiti e incassi) risiedono nel `localStorage` del browser dell'iPhone, sotto la chiave `unghie-mamma-v1`.
 
 ---
 
