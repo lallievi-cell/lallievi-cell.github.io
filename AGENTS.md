@@ -58,6 +58,27 @@
 
 ---
 
-## 4. Linee Guida di Sviluppo
-- **UI & UX per Mamma**: La grafica deve essere pulita, a caratteri grandi, pulsanti ben distanziati per il tocco con le dita su iPhone, con colori caldi/eleganti (palette già presente: tonalità malva/rosa/crema).
-- **Semplicità prima di tutto**: Evitare configurazioni complesse o dipendenze pesanti inutili; il codice è volutamente puro (Vanilla JS + CSS nativo), ultra-veloce e senza build step obbligatori.
+## 4. Regola d'Oro UX: Design per la Mamma ("Boomer-Proof")
+> 👵 **TARGET UTENTE: Mamma non tecnica.**  
+> Qualsiasi modifica futura DEVE assolutamente rispettare questi principi di semplicità estrema. Se una funzione risulta complicata o poco intuitiva per lei, è un fallimento di design.
+
+1. **Zero Gergo Tecnico e Zero Complessità**:
+   - Usare solo italiano semplice, naturale e diretto (es. *"Chiama"*, *"Manda WhatsApp"*, *"Segna come fatta"*, *"Da pagare"*, *"Salva copia"*).
+   - Niente impostazioni nascoste, sottomenu annidati o flussi a più passaggi complicati.
+2. **Pulsanti Grandi e Spaziati ("Fat-Finger Friendly")**:
+   - Tutti i pulsanti devono essere grandi, alti (minimo 48-52px di touch target) e ben distanziati per essere premuti comodamente con il pollice su iPhone senza rischiare di toccare il tasto sbagliato.
+3. **Alta Leggevolezza e Contrasto**:
+   - Font grandi (minimo 16-18px per i testi principali, numeri orari e prezzi ben visibili).
+   - Nessun testo grigio chiaro o a basso contrasto: deve potersi leggere senza sforzo anche senza occhiali o con luce forte.
+4. **Protezione della Memoria Muscolare**:
+   - Mamma ha già memorizzato dove si trovano le cose:
+     - La barra in basso con le 4 icone: **📅 Oggi**, **🗓️ Agenda**, **👩 Clienti**, **💶 Soldi**.
+     - Il grande pulsante rotondo **[+]** in basso a destra per aggiungere.
+   - **NON spostare o stravolgere** la disposizione di questi elementi base: l'abitudine è fondamentale.
+5. **Colori Parlanti e Chiari**:
+   - Verde per ciò che è a posto / pagato.
+   - Rosso/Rosa scuro per chi deve ancora pagare o per le allergie.
+   - Toni caldi, rassicuranti ed eleganti (palette rosa/crema già presente).
+6. **Nessun Rischio di Errori Accidentali**:
+   - Mai eliminazioni dirette con un tocco: chiedere sempre una conferma chiarissima prima di cancellare un appuntamento o una cliente.
+   - Modali semplici con pulsante "Salva" evidente e pulsante "Chiudi / Annulla" ben visibile in basso.
