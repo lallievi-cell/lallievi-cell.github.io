@@ -30,8 +30,25 @@ function formApt(id,time){
 }
 function openApt(id){formApt(id)}
 function saveApt(id){
-  const rec={id:id||uid(),clientId:document.getElementById("f_c").value,date:document.getElementById("f_d").value,time:document.getElementById("f_t").value,serviceId:document.getElementById("f_s").value,minutes:+document.getElementById("f_min").value||60,price:+document.getElementById("f_p").value||0,paid:+document.getElementById("f_pay").value||0,work:document.getElementById("f_w").value.trim(),status:document.getElementById("f_st").value};
-  if(!rec.clientId){alert("Serve una cliente");return}
+  const clientId=document.getElementById("f_c").value;
+  const date=document.getElementById("f_d").value;
+  const time=document.getElementById("f_t").value;
+  const serviceId=document.getElementById("f_s").value;
+  const minutes=+document.getElementById("f_min").value||60;
+  const price=+document.getElementById("f_p").value||0;
+  const paid=+document.getElementById("f_pay").value||0;
+  const work=document.getElementById("f_w").value.trim();
+  const status=document.getElementById("f_st").value;
+  if(!clientId){alert("Serve una cliente");return}
+  if(status!=="cancelled"){
+    const ov=findOverlap(date,time,minutes,id);
+    if(ov){
+      const oc=C(ov.clientId);
+      const ovName=oc?oc.name:"un'altra cliente";
+      if(!confirm("Attenzione: a quest'ora c'è già "+ovName+" ("+(ov.time||"").slice(0,5)+", "+mins(ov)+" min). Vuoi salvare comunque?")) return;
+    }
+  }
+  const rec={id:id||uid(),clientId,date,time,serviceId,minutes,price,paid,work,status};
   const i=db.appointments.findIndex(a=>a.id===rec.id);
   if(i>=0)db.appointments[i]=rec;else db.appointments.push(rec);
   save();closeModal();render();
@@ -49,22 +66,34 @@ function formClient(id,fromApt){
   h+="<label>Prodotto che le sta bene</label><input id='c_prod' value=\""+esc(c.product||"")+"\">";
   h+="<label>Preferenze</label><textarea id='c_pr'>"+esc(c.prefs||"")+"</textarea>";
   h+="<label>Foto ultima set</label><input id='c_photo' type='file' accept='image/*'>";
-  if(c.photo) h+="<img class='photo' src='"+c.photo+"' alt='unghie'>";
+  if(c.photo){
+    h+="<img class='photo' src='"+c.photo+"' alt='unghie'>";
+    h+="<button type='button' class='btn btn-bad btn-sm' style='width:100%;margin-top:6px' onclick='removeClientPhoto(\""+(id||"")+"\")'>Rimuovi foto</button>";
+  }
   h+="<label>Richiamo dopo quante settimane</label><input id='c_r' type='number' value='"+(c.recallWeeks||3)+"'>";
   h+="<button type='button' class='btn btn-primary' style='margin-top:16px' onclick='saveClient(\""+(id||"")+"\","+(fromApt?1:0)+")'>Salva cliente</button>";
   h+="<button type='button' class='btn btn-ghost' style='width:100%;margin-top:8px' onclick='closeModal()'>Annulla</button>";
   openModal(h);
+}
+function removeClientPhoto(id){
+  if(!id)return;
+  const c=C(id);
+  if(c&&confirm("Vuoi rimuovere la foto da questa scheda?")){
+    delete c.photo;
+    save();
+    formClient(id);
+  }
 }
 function resizePhoto(file,cb){
   const r=new FileReader();
   r.onload=function(){
     const img=new Image();
     img.onload=function(){
-      const max=640;let w=img.width,h=img.height;
+      const max=480;let w=img.width,h=img.height;
       if(w>max){h=h*max/w;w=max}
       const cv=document.createElement("canvas");cv.width=w;cv.height=h;
       cv.getContext("2d").drawImage(img,0,0,w,h);
-      cb(cv.toDataURL("image/jpeg",0.72));
+      cb(cv.toDataURL("image/jpeg",0.65));
     };
     img.src=r.result;
   };
@@ -124,7 +153,15 @@ function openClient(id){
   h+="<button type='button' class='btn btn-ghost' style='width:100%;margin-top:8px' onclick='closeModal()'>Chiudi</button>";
   openModal(h);
 }
-function delClient(id){const c=C(id);if(!confirm("Vuoi eliminare "+c.name+"?"))return;db.clients=db.clients.filter(x=>x.id!==id);db.appointments=db.appointments.filter(a=>a.clientId!==id);save();closeModal();render()}
+function delClient(id){
+  const c=C(id);if(!c)return;
+  const b=bal(id);
+  const msg=b>0.01?"Attenzione! "+c.name+" deve ancora "+euro(b)+". Eliminando la scheda cancellerai anche il suo debito. Vuoi davvero eliminarla?":"Vuoi davvero eliminare la cliente "+c.name+"?";
+  if(!confirm(msg))return;
+  db.clients=db.clients.filter(x=>x.id!==id);
+  db.appointments=db.appointments.filter(a=>a.clientId!==id);
+  save();closeModal();render();toast("Cliente eliminata.");
+}
 function exp(){
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:"application/json"}));
@@ -143,7 +180,7 @@ function imp(ev){
       const d=JSON.parse(r.result);
       if(!d.clients||!d.appointments)throw 1;
       if(confirm("Sostituire i dati con questa copia?")){
-        db=d;if(!db.services)db.services=SV.slice();save();render();
+        db=d;if(!db.services)db.services=SV.slice();save();render();toast("Dati ripristinati con successo!");alert("Dati ripristinati con successo!");
       }
     }catch(e){alert("File non valido")}
   };

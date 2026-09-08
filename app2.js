@@ -242,7 +242,9 @@ function vMonth(){
   if(!list.length) html+="<p class='muted'>Nessun appuntamento.</p>";
   else list.forEach(function(a){
     const c=C(a.clientId);
-    html+="<div class='slot' onclick='openApt(\""+a.id+"\")'><span>"+esc((a.time||"").slice(0,5))+" · "+esc(c?c.name:"Cliente")+"</span><span class='tiny'>"+mins(a)+" min</span></div>";
+    const isCanc=a.status==="cancelled";
+    const stText=isCanc?"Annullata":(a.status==="done"?"Fatta":mins(a)+" min");
+    html+="<div class='slot' style='"+(isCanc?"opacity:0.5;text-decoration:line-through":"")+"' onclick='openApt(\""+a.id+"\")'><span>"+esc((a.time||"").slice(0,5))+" · "+esc(c?c.name:"Cliente")+"</span><span class='tiny'>"+stText+"</span></div>";
   });
   html+="<button type='button' class='btn btn-soft' style='width:100%;margin-top:10px' onclick='newAt(\""+selectedDate+"\",\"10:00\")'>+ In questo giorno</button></div>";
   return html;

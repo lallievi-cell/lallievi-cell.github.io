@@ -62,7 +62,7 @@ textarea{min-height:90px}label{display:block;font-size:15px;font-weight:800;colo
 .nav button.active{color:var(--rose)}.nav .ico{font-size:22px}
 .modal-bg{position:fixed;inset:0;background:rgba(28,16,20,.48);z-index:40;display:none;align-items:flex-end;justify-content:center}
 .modal-bg.show{display:flex}
-.modal{background:#fff;width:100%;max-width:720px;max-height:92dvh;overflow:auto;border-radius:28px 28px 0 0;padding:18px 16px calc(24px + var(--safe-bottom))}
+.modal{background:#fff;width:100%;max-width:720px;max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:28px 28px 0 0;padding:18px 16px calc(48px + var(--safe-bottom))}
 .handle{width:44px;height:5px;background:#E5C9D0;border-radius:99px;margin:0 auto 12px}
 .empty{text-align:center;padding:28px 10px;color:var(--muted)}.empty .big{font-size:46px;margin-bottom:8px}
 .week-nav{display:flex;align-items:center;gap:8px;margin-bottom:10px}
@@ -127,8 +127,8 @@ textarea{min-height:90px}label{display:block;font-size:15px;font-weight:800;colo
 </nav>
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
 <div class="toast" id="toast">Salvato.</div>
-<script src="./app.js?v=15"></script>
-<script src="./app2.js?v=15"></script>
-<script src="./app3.js?v=15"></script>
+<script src="./app.js?v=16"></script>
+<script src="./app2.js?v=16"></script>
+<script src="./app3.js?v=16"></script>
 </body>
 </html>

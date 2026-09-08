@@ -17,7 +17,7 @@ function tomorrow(){const d=parseISO(today());d.setDate(d.getDate()+1);return ym
 function parseISO(iso){const p=(iso||"").split("-");return new Date(+p[0],(+p[1]||1)-1,+p[2]||1)}
 function load(){try{db=Object.assign({clients:[],appointments:[],services:SV},JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){db={clients:[],appointments:[],services:SV}}
 if(!db.services||!db.services.length)db.services=SV.slice()}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(db));toast("Salvato.")}catch(e){alert("Salvataggio non riuscito")}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db));toast("Salvato.")}catch(e){if(e&&(e.name==='QuotaExceededError'||e.code===22)){alert("Attenzione: memoria del telefono piena! Rimuovi qualche foto dalle schede clienti per liberare spazio.")}else{alert("Salvataggio non riuscito: memoria non disponibile.")}}}
 function toast(msg){const el=document.getElementById("toast");if(!el)return;el.textContent=msg||"Salvato.";el.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(function(){el.classList.remove("show")},1400)}
 function euro(n){return(Number(n)||0).toLocaleString("it-IT",{style:"currency",currency:"EUR"})}
 function esc(s){return String(s||"").replace(/[&<>"]/g,function(ch){return "&#"+ch.charCodeAt(0)+";"})}
@@ -26,7 +26,8 @@ function S(id){return (db.services||[]).find(x=>x.id===id)}
 function mins(a){if(a&&+a.minutes)return +a.minutes;const s=S(a&&a.serviceId);return (s&&s.minutes)||60}
 function toMin(t){const p=String(t||"0:0").split(":");return (+p[0]||0)*60+(+p[1]||0)}
 function slotApt(list,hh){const slot=toMin(hh);return list.find(function(a){if(a.status==="cancelled")return false;const start=toMin(a.time);return slot>=start&&slot<start+mins(a)})}
-function overlaps(date,time,minutes,exceptId){const start=toMin(time),end=start+(+minutes||60);return db.appointments.some(function(a){if(a.id===exceptId||a.date!==date||a.status==="cancelled"||a.status==="deleted")return false;const s=toMin(a.time),e=s+mins(a);return start<e&&end>s})}
+function findOverlap(date,time,minutes,exceptId){const start=toMin(time),end=start+(+minutes||60);return db.appointments.find(function(a){if(a.id===exceptId||a.date!==date||a.status==="cancelled"||a.status==="deleted")return false;const s=toMin(a.time),e=s+mins(a);return start<e&&end>s})}
+function overlaps(date,time,minutes,exceptId){return Boolean(findOverlap(date,time,minutes,exceptId))}
 function apts(date){return db.appointments.filter(a=>a.date===date&&a.status!=="deleted"&&a.status!=="cancelled").sort((a,b)=>(a.time||"").localeCompare(b.time||""))}
 function allApts(date){return db.appointments.filter(a=>a.date===date&&a.status!=="deleted").sort((a,b)=>(a.time||"").localeCompare(b.time||""))}
 function bal(id){return db.appointments.filter(a=>a.clientId===id&&a.status==="done").reduce((s,a)=>s+(+a.price||0)-(+a.paid||0),0)}
@@ -37,7 +38,7 @@ function weeksAgo(iso){const d=Math.round((parseISO(today())-parseISO(iso))/8640
 function openModal(h){document.getElementById("modal").innerHTML="<div class='handle'></div>"+h;document.getElementById("modalBg").classList.add("show")}
 function closeModal(){document.getElementById("modalBg").classList.remove("show")}
 function phoneDigits(p){return String(p||"").replace(/\D/g,"")}
-function waNum(p){const d=phoneDigits(p);if(!d)return"";return d.length<=10?"39"+d:d}
+function waNum(p){let d=phoneDigits(p);if(!d)return"";if(d.startsWith("00"))d=d.slice(2);return d.length<=10?"39"+d:d}
 function waLink(phone,text){const n=waNum(phone);if(!n)return"";return "https://wa.me/"+n+"?text="+encodeURIComponent(text)}
 function firstName(c){return ((c&&c.name)||"tesoro").split(" ")[0]}
 function msgRemind(a){const c=C(a.clientId);return "Ciao "+firstName(c)+", ti aspetto "+ndl(a.date)+" alle "+(a.time||"").slice(0,5)+" per le unghie. A domani!"}
@@ -76,7 +77,7 @@ function openNew(){if(tab==="clienti")formClient();else formApt()}
 function markDonePaid(id){const a=db.appointments.find(x=>x.id===id);if(!a)return;a.status="done";a.paid=+a.price||0;save();closeModal();render()}
 function shiftApt(id,min){const a=db.appointments.find(x=>x.id===id);if(!a)return;const p=(a.time||"10:00").split(":");const dt=new Date();dt.setHours(+p[0]||10,+p[1]||0,0,0);dt.setMinutes(dt.getMinutes()+min);a.time=pad(dt.getHours())+":"+pad(dt.getMinutes());save();render()}
 function cancelApt(id){if(!confirm("Annullare questo appuntamento?"))return;const a=db.appointments.find(x=>x.id===id);if(!a)return;a.status="cancelled";save();closeModal();render()}
-function payOff(id){db.appointments.forEach(function(a){if(a.clientId===id&&a.status==="done")a.paid=+a.price||0});save();closeModal();render()}
+function payOff(id){const c=C(id),b=bal(id);if(!confirm("Confermi di aver incassato "+euro(b)+" da "+(c?c.name:"questa cliente")+"?"))return;db.appointments.forEach(function(a){if(a.clientId===id&&a.status==="done")a.paid=+a.price||0});save();closeModal();render();toast("Incasso registrato!")}
 function pickDay(iso){selectedDate=iso;if(tab!=="agenda")go("agenda");else render()}
 function pickClient(id){formApt();setTimeout(function(){const s=document.getElementById("f_c");if(s)s.value=id},0)}
 function newAt(iso,time){selectedDate=iso;formApt(null,time)}
