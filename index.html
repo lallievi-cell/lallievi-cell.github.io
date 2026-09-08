@@ -62,7 +62,25 @@ textarea{min-height:90px}label{display:block;font-size:15px;font-weight:800;colo
 .handle{width:44px;height:5px;background:#E5C9D0;border-radius:99px;margin:0 auto 12px}
 .empty{text-align:center;padding:28px 10px;color:var(--muted)}.empty .big{font-size:46px;margin-bottom:8px}
 .week-nav{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.daycard{margin-bottom:10px}#day-today{scroll-margin-top:92px}
+.daycard{margin-bottom:12px;scroll-margin-top:130px}
+.week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:10px}
+.day-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:6px 2px;min-height:54px;font-size:13px;font-weight:800;color:var(--ink);cursor:pointer}
+.day-btn.has{border-color:var(--rose);background:var(--blush)}
+.day-btn.today{border:2.5px solid var(--rose)}
+.day-btn.sel{background:var(--rose);color:#fff;border-color:var(--rose)}
+.day-btn .d-num{font-size:16px;font-weight:900}
+.day-btn .d-dot{width:6px;height:6px;border-radius:50%;background:var(--rose);margin-top:3px}
+.day-btn.sel .d-dot{background:#fff}
+.apt-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--line);border-radius:18px;background:#fff;margin-top:8px;cursor:pointer}
+.apt-item:active{background:var(--blush)}
+.apt-time{min-width:70px;text-align:center;background:var(--blush);color:var(--rose);padding:8px 4px;border-radius:14px;font-weight:900;font-size:18px;line-height:1.15}
+.apt-time small{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-top:2px}
+.apt-info{flex:1;min-width:0}
+.apt-name{font-weight:800;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.apt-serv{color:var(--muted);font-size:14px;margin-top:2px}
+.gap-item{display:flex;align-items:center;justify-content:space-between;background:#fbf3f5;border:1.5px dashed var(--line);border-radius:14px;padding:9px 12px;margin-top:8px;font-size:14px;font-weight:750;color:var(--muted);cursor:pointer}
+.gap-item:active{background:var(--blush)}
+.day-empty{text-align:center;padding:14px 8px 6px;color:var(--muted);font-size:15px;font-weight:600}
 .slot{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line);font-weight:700}
 .slot.empty{color:var(--muted);font-weight:650}
 .avatar{width:48px;height:48px;border-radius:50%;background:var(--blush);color:var(--rose);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;flex-shrink:0;overflow:hidden}
@@ -95,8 +113,8 @@ textarea{min-height:90px}label{display:block;font-size:15px;font-weight:800;colo
 </nav>
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
 <div class="toast" id="toast">Salvato.</div>
-<script src="./app.js?v=13"></script>
-<script src="./app2.js?v=13"></script>
-<script src="./app3.js?v=13"></script>
+<script src="./app.js?v=14"></script>
+<script src="./app2.js?v=14"></script>
+<script src="./app3.js?v=14"></script>
 </body>
 </html>

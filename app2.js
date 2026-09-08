@@ -65,25 +65,100 @@ function vAgenda(){
   const start=parseISO(days[0]);
   const end=parseISO(days[6]);
   const label=start.toLocaleDateString("it-IT",{day:"numeric",month:"short"})+" – "+end.toLocaleDateString("it-IT",{day:"numeric",month:"short"});
-  let html=calToggle()+"<div class='card'><div class='week-nav'><button type='button' class='btn btn-ghost btn-sm' onclick='shiftW(-1)'>←</button><button type='button' class='btn btn-soft btn-sm' onclick='goToday()'>Oggi</button><button type='button' class='btn btn-ghost btn-sm' onclick='shiftW(1)'>→</button></div><div style='text-align:center;font-weight:800;margin-top:6px'>"+label+"</div></div>";
-  const hours=["09:00","10:00","11:00","12:00","14:00","15:00","16:00","17:00","18:00"];
+
+  let weekTotal=0;
   days.forEach(function(iso){
-    const list=allApts(iso);
-    const isTod=iso===today();
-    html+="<div class='card daycard"+(isTod?" now":"")+"' "+(isTod?"id='day-today'":"")+"><div class='row'><div class='name' style='text-transform:capitalize'>"+nd(iso)+"</div>"+(list.length?"<span class='chip'>"+list.length+"</span>":"<span class='tiny'>Libero</span>")+"</div>";
-    hours.forEach(function(hh){
-      const found=slotApt(list,hh);
-      if(found){
-        const c=C(found.clientId);
-        const stime=(found.time||"").slice(0,5);
-        const lab=stime===hh?hh+" · "+esc(c?c.name:"Cliente")+" · "+mins(found)+" min":hh+" · ancora "+esc(c?c.name:"lei");
-        html+="<div class='slot' onclick='openApt(\""+found.id+"\")'><span>"+lab+"</span><span class='tiny'>"+(found.status==="done"?"Fatta":found.status==="cancelled"?"Annullata":"occupata")+"</span></div>";
-      } else {
-        html+="<div class='slot empty' onclick='newAt(\""+iso+"\",\""+hh+"\")'>"+hh+" · libero</div>";
-      }
-    });
-    html+="<button type='button' class='btn btn-soft btn-sm' style='width:100%;margin-top:8px' onclick='newAt(\""+iso+"\",\"10:00\")'>+ In questo giorno</button></div>";
+    weekTotal += allApts(iso).filter(function(a){return a.status!=="cancelled"}).length;
   });
+
+  const dayInitials=["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
+  let strip="<div class='week-strip'>";
+  days.forEach(function(iso,idx){
+    const dt=parseISO(iso);
+    const dNum=dt.getDate();
+    const dayCount=allApts(iso).filter(function(a){return a.status!=="cancelled"}).length;
+    const isTod=iso===today();
+    const isSel=iso===selectedDate;
+    const cls=["day-btn",isTod?"today":"",dayCount?"has":"",isSel?"sel":""].filter(Boolean).join(" ");
+    strip+="<button type='button' class='"+cls+"' onclick='scrollToDay(\""+iso+"\")'>"+
+      "<div style='opacity:0.85'>"+dayInitials[idx]+"</div>"+
+      "<div class='d-num'>"+dNum+"</div>"+
+      (dayCount?"<div class='d-dot'></div>":"<div style='height:9px'></div>")+
+      "</button>";
+  });
+  strip+="</div>";
+
+  let html=calToggle()+"<div class='card'><div class='week-nav'><button type='button' class='btn btn-ghost btn-sm' onclick='shiftW(-1)'>←</button><button type='button' class='btn btn-soft btn-sm' onclick='goToday()'>Oggi</button><button type='button' class='btn btn-ghost btn-sm' onclick='shiftW(1)'>→</button></div><div style='text-align:center;font-weight:800;margin-top:6px'>"+label+" <span class='muted' style='font-size:14px;font-weight:700'>· "+(weekTotal===1?"1 appuntamento":weekTotal+" appuntamenti")+"</span></div>"+strip+"</div>";
+
+  days.forEach(function(iso){
+    const list=allApts(iso).sort(function(a,b){return (a.time||"").localeCompare(b.time||"")});
+    const isTod=iso===today();
+    const dt=parseISO(iso);
+    const dayTitle=dt.toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"});
+    const activeCount=list.filter(function(a){return a.status!=="cancelled"}).length;
+
+    let countBadge="";
+    if(isTod){
+      countBadge="<span class='chip' style='background:var(--rose);color:#fff;font-weight:850'>OGGI</span>";
+    } else if(activeCount){
+      countBadge="<span class='chip'>"+activeCount+(activeCount===1?" appuntamento":" appuntamenti")+"</span>";
+    } else {
+      countBadge="<span class='tiny'>Libero</span>";
+    }
+
+    html+="<div class='card daycard"+(isTod?" now":"")+"' id='day-"+iso+"'>"+
+      "<div class='row' style='padding-bottom:6px;border-bottom:1px solid var(--line)'><div class='name' style='text-transform:capitalize;font-size:20px'>"+dayTitle+"</div>"+countBadge+"</div>";
+
+    if(!list.length){
+      html+="<div class='day-empty'>Nessun appuntamento · Tutta libera</div>";
+    } else {
+      let prevEnd=null;
+      list.forEach(function(a){
+        const startTime=(a.time||"10:00").slice(0,5);
+        const startMin=toMin(startTime);
+        const duration=mins(a);
+        const endMin=startMin+duration;
+        const endTime=minToTime(endMin);
+
+        if(prevEnd!==null && startMin - prevEnd >= 30 && a.status!=="cancelled"){
+          const gapStart=minToTime(prevEnd);
+          html+="<div class='gap-item' onclick='newAt(\""+iso+"\",\""+gapStart+"\")'>"+
+            "<span>⏱️ "+gapStart+" – "+startTime+" libero</span>"+
+            "<span class='chip' style='background:#fff;font-size:12px;padding:3px 8px;color:var(--rose)'>+ Prenota</span>"+
+            "</div>";
+        }
+        if(a.status!=="cancelled"){
+          prevEnd = Math.max(prevEnd||0, endMin);
+        }
+
+        const c=C(a.clientId);
+        const s=S(a.serviceId);
+        const due=(+a.price||0)-(+a.paid||0);
+        let chipCls="paid", chipText="Deve venire";
+        if(a.status==="cancelled"){
+          chipCls="debt"; chipText="Annullata";
+        } else if(a.status==="done"){
+          if(due>0.01){ chipCls="debt"; chipText="Fatta · Deve "+euro(due); }
+          else { chipCls="paid"; chipText="Fatta · Pagato"; }
+        } else {
+          if(due>0.01){ chipCls="debt"; chipText="Deve venire · "+euro(a.price||0); }
+          else { chipCls="paid"; chipText="Deve venire"; }
+        }
+
+        html+="<div class='apt-item' onclick='openApt(\""+a.id+"\")'>"+
+          "<div class='apt-time'>"+startTime+"<small>fino "+endTime+"</small></div>"+
+          "<div class='apt-info'>"+
+            "<div class='apt-name'>"+esc(c?c.name:"Cliente")+"</div>"+
+            "<div class='apt-serv'>"+esc(s?s.name:"Servizio")+" · "+duration+" min</div>"+
+            "<div style='margin-top:5px'><span class='chip "+chipCls+"' style='font-size:12px;padding:3px 9px'>"+chipText+"</span></div>"+
+          "</div>"+
+        "</div>";
+      });
+    }
+
+    html+="<button type='button' class='btn btn-soft btn-sm' style='width:100%;margin-top:10px' onclick='newAt(\""+iso+"\",\"10:00\")'>+ Aggiungi a "+nd(iso)+"</button></div>";
+  });
+
   return html;
 }
 function vMonth(){

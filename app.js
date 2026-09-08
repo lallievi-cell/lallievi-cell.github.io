@@ -50,7 +50,9 @@ function isLate(a){if(a.status!=="booked"||a.date!==today())return false;const p
 function initial(c){return ((c&&c.name)||"?").trim().charAt(0).toUpperCase()}
 function setCal(v){calView=v;if(tab==="agenda"){document.getElementById("subtitle").textContent=v==="month"?"Mese":"Settimana";render()}}
 function shiftM(k){const dt=parseISO(selectedDate||today());dt.setMonth(dt.getMonth()+k);selectedDate=ymd(dt);render()}
-function scrollToToday(){const el=document.getElementById("day-today");if(!el)return;el.scrollIntoView({behavior:"smooth",block:"start"})}
+function minToTime(m){const h=Math.floor(m/60)%24,min=m%60;return pad(h)+":"+pad(min)}
+function scrollToDay(iso){selectedDate=iso;const el=document.getElementById("day-"+iso);if(el)el.scrollIntoView({behavior:"smooth",block:"start"})}
+function scrollToToday(){const el=document.getElementById("day-"+today())||document.getElementById("day-today");if(!el)return;el.scrollIntoView({behavior:"smooth",block:"start"})}
 function goToday(){selectedDate=today();render();setTimeout(scrollToToday,80)}
 function markReminded(id){const a=db.appointments.find(x=>x.id===id);if(!a)return;a.reminded=true;save();render()}
 function go(t){
