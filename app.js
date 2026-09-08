@@ -8,15 +8,16 @@ const SV=[
  {id:"rimozione",name:"Togliere unghie",minutes:30,price:15},
  {id:"pedicure",name:"Piedi",minutes:60,price:30}
 ];
-let db,tab="oggi",selectedDate,q="",cFilter="all",calView="week";
+let db,tab="oggi",selectedDate,q="",cFilter="all",calView="week",moneyMonth=today().slice(0,7);
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function pad(n){return String(n).padStart(2,"0")}
 function ymd(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
 function today(){return ymd(new Date())}
 function tomorrow(){const d=parseISO(today());d.setDate(d.getDate()+1);return ymd(d)}
 function parseISO(iso){const p=(iso||"").split("-");return new Date(+p[0],(+p[1]||1)-1,+p[2]||1)}
-function load(){try{db=Object.assign({clients:[],appointments:[],services:SV},JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){db={clients:[],appointments:[],services:SV}}
-if(!db.services||!db.services.length)db.services=SV.slice()}
+function load(){try{db=Object.assign({clients:[],appointments:[],services:SV,expenses:[]},JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){db={clients:[],appointments:[],services:SV,expenses:[]}}
+if(!db.services||!db.services.length)db.services=SV.slice();
+if(!db.expenses)db.expenses=[];}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(db));toast("Salvato.")}catch(e){if(e&&(e.name==='QuotaExceededError'||e.code===22)){alert("Attenzione: memoria del telefono piena! Rimuovi qualche foto dalle schede clienti per liberare spazio.")}else{alert("Salvataggio non riuscito: memoria non disponibile.")}}}
 function toast(msg){const el=document.getElementById("toast");if(!el)return;el.textContent=msg||"Salvato.";el.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(function(){el.classList.remove("show")},1400)}
 function euro(n){return(Number(n)||0).toLocaleString("it-IT",{style:"currency",currency:"EUR"})}
@@ -61,19 +62,21 @@ function go(t){
   tab=t;
   document.querySelectorAll(".nav button").forEach(function(b){b.classList.toggle("active",b.dataset.tab===t)});
   const n=db.clients.length;
-  const T={oggi:["Oggi",ndl(today())],agenda:["Agenda",calView==="month"?"Mese":"Settimana"],clienti:["Clienti",n+(n===1?" scheda":" schede")],soldi:["Soldi","Incassi e crediti"]};
+  const T={oggi:["Oggi",ndl(today())],agenda:["Agenda",calView==="month"?"Mese":"Settimana"],clienti:["Clienti",n+(n===1?" scheda":" schede")],soldi:["Soldi","Incassi, spese e bilancio"]};
   document.getElementById("title").textContent=T[t][0];
   document.getElementById("subtitle").textContent=T[t][1];
   const fab=document.getElementById("fab");
-  fab.classList.toggle("hidden",t==="soldi");
-  fab.textContent=t==="clienti"?"+ Cliente":"+ Prenota";
+  fab.classList.remove("hidden");
+  if(t==="clienti") fab.textContent="+ Cliente";
+  else if(t==="soldi") fab.textContent="+ Spesa";
+  else fab.textContent="+ Prenota";
   document.getElementById("clientSearch").classList.toggle("hidden",t!=="clienti");
   document.getElementById("filters").classList.toggle("hidden",t!=="clienti");
   if(t==="clienti") drawFilters();
   render();
 }
 function render(){const el=document.getElementById("app");if(tab==="oggi")el.innerHTML=vToday();if(tab==="agenda")el.innerHTML=vAgenda();if(tab==="clienti")el.innerHTML=vClients();if(tab==="soldi")el.innerHTML=vMoney()}
-function openNew(){if(tab==="clienti")formClient();else formApt()}
+function openNew(){if(tab==="clienti")formClient();else if(tab==="soldi")formExpense();else formApt()}
 function markDonePaid(id){const a=db.appointments.find(x=>x.id===id);if(!a)return;a.status="done";a.paid=+a.price||0;save();closeModal();render()}
 function shiftApt(id,min){const a=db.appointments.find(x=>x.id===id);if(!a)return;const p=(a.time||"10:00").split(":");const dt=new Date();dt.setHours(+p[0]||10,+p[1]||0,0,0);dt.setMinutes(dt.getMinutes()+min);a.time=pad(dt.getHours())+":"+pad(dt.getMinutes());save();render()}
 function cancelApt(id){if(!confirm("Annullare questo appuntamento?"))return;const a=db.appointments.find(x=>x.id===id);if(!a)return;a.status="cancelled";save();closeModal();render()}
@@ -82,3 +85,36 @@ function pickDay(iso){selectedDate=iso;if(tab!=="agenda")go("agenda");else rende
 function pickClient(id){formApt();setTimeout(function(){const s=document.getElementById("f_c");if(s)s.value=id},0)}
 function newAt(iso,time){selectedDate=iso;formApt(null,time)}
 function fillService(){const s=S(document.getElementById("f_s").value);if(!s)return;document.getElementById("f_p").value=s.price;document.getElementById("f_min").value=s.minutes}
+function shiftMoneyM(k){
+  const p=moneyMonth.split("-");
+  const dt=new Date(+p[0],(+p[1]||1)-1+k,1);
+  moneyMonth=dt.getFullYear()+"-"+pad(dt.getMonth()+1);
+  render();
+}
+function goMoneyThisMonth(){
+  moneyMonth=today().slice(0,7);
+  render();
+}
+function delExpense(id){
+  const x=(db.expenses||[]).find(e=>e.id===id);
+  if(!x)return;
+  const desc=x.desc||expenseCatName(x.category);
+  if(!confirm("Cancellare la spesa di "+euro(x.amount)+" ("+desc+")?"))return;
+  db.expenses=(db.expenses||[]).filter(e=>e.id!==id);
+  save();
+  closeModal();
+  render();
+  toast("Spesa eliminata.");
+}
+function expenseCatName(cat){
+  if(cat==="materiali")return "Gel e Smalti";
+  if(cat==="attrezzatura")return "Attrezzatura e Frese";
+  if(cat==="varie")return "Monouso e Varie";
+  return "Altro";
+}
+function expenseCatIcon(cat){
+  if(cat==="materiali")return "💅";
+  if(cat==="attrezzatura")return "🔌";
+  if(cat==="varie")return "📦";
+  return "🧾";
+}

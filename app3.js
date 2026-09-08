@@ -162,6 +162,66 @@ function delClient(id){
   db.appointments=db.appointments.filter(a=>a.clientId!==id);
   save();closeModal();render();toast("Cliente eliminata.");
 }
+function formExpense(id){
+  const x=id?(db.expenses||[]).find(e=>e.id===id):null;
+  const d=x?x.date:today();
+  const amt=x?x.amount:"";
+  const cat=x?x.category:"materiali";
+  const desc=x?(x.desc||""):"";
+
+  let h="<h2>"+(x?"Modifica spesa":"Nuova spesa")+"</h2>";
+  h+="<form onsubmit='event.preventDefault();saveExpense("+(id?"\""+id+"\"":"null")+")'>";
+  h+="<label>Quanto hai speso (€)</label>";
+  h+="<input id='e_amt' type='number' step='0.50' min='0.10' placeholder='Es. 35' value='"+amt+"' required autofocus style='font-size:26px;font-weight:900;color:var(--bad)'/>";
+  
+  h+="<label>Giorno</label>";
+  h+="<input id='e_date' type='date' value='"+d+"' required/>";
+
+  h+="<label>Categoria</label>";
+  h+="<select id='e_cat'>"+
+    "<option value='materiali'"+(cat==="materiali"?" selected":"")+">💅 Gel, Smalti e Colori</option>"+
+    "<option value='attrezzatura'"+(cat==="attrezzatura"?" selected":"")+">🔌 Attrezzatura, Lampade e Frese</option>"+
+    "<option value='varie'"+(cat==="varie"?" selected":"")+">📦 Monouso, Lime, Pad e Varie</option>"+
+    "</select>";
+
+  h+="<label>Cosa hai comprato? (facoltativo)</label>";
+  h+="<input id='e_desc' type='text' placeholder='Es. Top coat, punte fresa, lime...' value='"+esc(desc)+"'/>";
+
+  h+="<button type='submit' class='btn btn-primary' style='margin-top:20px;font-size:18px;padding:16px'>"+(x?"Salva Modifiche":"+ Aggiungi Spesa")+"</button>";
+
+  if(x){
+    h+="<button type='button' class='btn btn-bad' style='width:100%;margin-top:10px' onclick='delExpense(\""+id+"\")'>Elimina spesa</button>";
+  }
+  h+="<button type='button' class='btn btn-ghost' style='width:100%;margin-top:8px' onclick='closeModal()'>Annulla</button>";
+  h+="</form>";
+
+  openModal(h);
+}
+function saveExpense(id){
+  const amt=parseFloat(document.getElementById("e_amt").value);
+  if(!amt||amt<=0){alert("Inserisci un importo valido");return;}
+  const date=document.getElementById("e_date").value||today();
+  const cat=document.getElementById("e_cat").value||"materiali";
+  const desc=document.getElementById("e_desc").value.trim();
+
+  const rec={
+    id:id||uid(),
+    amount:amt,
+    date:date,
+    category:cat,
+    desc:desc
+  };
+
+  if(!db.expenses) db.expenses=[];
+  const idx=db.expenses.findIndex(e=>e.id===rec.id);
+  if(idx>=0) db.expenses[idx]=rec;
+  else db.expenses.push(rec);
+
+  save();
+  closeModal();
+  render();
+  toast("Spesa registrata!");
+}
 function exp(){
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:"application/json"}));
@@ -180,7 +240,10 @@ function imp(ev){
       const d=JSON.parse(r.result);
       if(!d.clients||!d.appointments)throw 1;
       if(confirm("Sostituire i dati con questa copia?")){
-        db=d;if(!db.services)db.services=SV.slice();save();render();toast("Dati ripristinati con successo!");alert("Dati ripristinati con successo!");
+        db=d;
+        if(!db.services)db.services=SV.slice();
+        if(!db.expenses)db.expenses=[];
+        save();render();toast("Dati ripristinati con successo!");alert("Dati ripristinati con successo!");
       }
     }catch(e){alert("File non valido")}
   };
@@ -189,3 +252,4 @@ function imp(ev){
 document.getElementById("clientSearch").addEventListener("input",function(e){q=e.target.value.toLowerCase();if(tab==="clienti")render()});
 document.getElementById("modalBg").addEventListener("click",function(e){if(e.target.id==="modalBg")closeModal()});
 load();selectedDate=today();go("oggi");
+

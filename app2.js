@@ -273,13 +273,113 @@ function vClients(){
 function mondayISO(){return startOfWeek(today())}
 function vMoney(){
   const done=db.appointments.filter(a=>a.status==="done");
-  const weekStart=mondayISO();
-  const todayPaid=done.filter(a=>a.date===today()).reduce(function(s,a){return s+(+a.paid||0)},0);
-  const weekPaid=done.filter(a=>a.date>=weekStart&&a.date<=today()).reduce(function(s,a){return s+(+a.paid||0)},0);
-  const mo=today().slice(0,7);
-  const monthPaid=done.filter(a=>(a.date||"").startsWith(mo)).reduce(function(s,a){return s+(+a.paid||0)},0);
+  const mo=moneyMonth||today().slice(0,7);
+  const isCurrentMonth=mo===today().slice(0,7);
+  const pMo=mo.split("-");
+  const dtMo=new Date(+pMo[0],(+pMo[1]||1)-1,1);
+  const monthTitle=dtMo.toLocaleDateString("it-IT",{month:"long",year:"numeric"});
+
+  const monthDone=done.filter(a=>(a.date||"").startsWith(mo));
+  const monthPaid=monthDone.reduce((s,a)=>s+(+a.paid||0),0);
+
+  const exps=(db.expenses||[]).filter(e=>(e.date||"").startsWith(mo)).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const monthExpenses=exps.reduce((s,e)=>s+(+e.amount||0),0);
+
+  const netProfit=monthPaid-monthExpenses;
+
   const cred=db.clients.map(function(c){return {c:c,b:bal(c.id)}}).filter(x=>x.b>0.01);
-  const monthList=done.filter(a=>(a.date||"").startsWith(mo)).sort(function(a,b){return (b.date+b.time).localeCompare(a.date+a.time)}).slice(0,12);
+  const totalDebt=cred.reduce((s,x)=>s+x.b,0);
+
+  let html="";
+
+  html+="<div class='card' style='padding:12px 14px;margin-bottom:12px'>"+
+    "<div class='row'>"+
+      "<button type='button' class='btn btn-ghost btn-sm' style='min-width:48px;font-size:20px;padding:8px 14px' onclick='shiftMoneyM(-1)'>←</button>"+
+      "<div style='text-align:center'>"+
+        "<div style='font-size:21px;font-weight:900;text-transform:capitalize'>"+monthTitle+"</div>"+
+        (!isCurrentMonth?"<button type='button' class='btn btn-soft btn-sm' style='margin-top:4px;padding:4px 10px;font-size:13px' onclick='goMoneyThisMonth()'>Torna a questo mese</button>":"<div class='tiny' style='color:var(--muted)'>Mese in corso</div>")+
+      "</div>"+
+      "<button type='button' class='btn btn-ghost btn-sm' style='min-width:48px;font-size:20px;padding:8px 14px' onclick='shiftMoneyM(1)'>→</button>"+
+    "</div>"+
+  "</div>";
+
+  if(isCurrentMonth){
+    const weekStart=mondayISO();
+    const todayPaid=done.filter(a=>a.date===today()).reduce((s,a)=>s+(+a.paid||0),0);
+    const weekPaid=done.filter(a=>a.date>=weekStart&&a.date<=today()).reduce((s,a)=>s+(+a.paid||0),0);
+    html+="<div class='grid2' style='margin-bottom:12px'>"+
+      "<div class='card' style='margin-bottom:0;padding:12px 14px'>"+
+        "<div class='tiny muted'>Oggi</div>"+
+        "<div class='money' style='font-size:24px;color:var(--ok)'>"+euro(todayPaid)+"</div>"+
+      "</div>"+
+      "<div class='card' style='margin-bottom:0;padding:12px 14px'>"+
+        "<div class='tiny muted'>Questa settimana</div>"+
+        "<div class='money' style='font-size:24px;color:var(--ok)'>"+euro(weekPaid)+"</div>"+
+      "</div>"+
+    "</div>";
+  }
+
+  const netColor=netProfit>=0?"var(--ok)":"var(--bad)";
+  html+="<div class='card card-net' style='border:2px solid "+(netProfit>=0?"var(--ok)":"var(--bad)")+";background:"+(netProfit>=0?"#F0F9F3":"#FDF2F2")+";margin-bottom:12px'>"+
+    "<div class='row'>"+
+      "<div>"+
+        "<div style='font-size:14px;font-weight:800;letter-spacing:0.5px;color:var(--muted);text-transform:uppercase'>Guadagno Netto ("+monthTitle+")</div>"+
+        "<div class='money' style='font-size:36px;font-weight:900;color:"+netColor+";margin-top:2px'>"+euro(netProfit)+"</div>"+
+        "<div class='tiny' style='margin-top:2px;color:var(--muted)'>Incassi totali meno spese sostenute</div>"+
+      "</div>"+
+      "<div style='font-size:36px'>"+(netProfit>=0?"💰":"📉")+"</div>"+
+    "</div>"+
+  "</div>";
+
+  html+="<div class='grid2' style='margin-bottom:12px'>"+
+    "<div class='card' style='margin-bottom:0;border-left:4px solid var(--ok)'>"+
+      "<div class='tiny muted'>Incassato</div>"+
+      "<div class='money' style='font-size:26px;color:var(--ok);margin-top:2px'>"+euro(monthPaid)+"</div>"+
+      "<div class='tiny muted' style='margin-top:2px'>"+monthDone.length+(monthDone.length===1?" lavoro":" lavori")+"</div>"+
+    "</div>"+
+    "<div class='card' style='margin-bottom:0;border-left:4px solid var(--bad)'>"+
+      "<div class='tiny muted'>Spese uscite</div>"+
+      "<div class='money' style='font-size:26px;color:var(--bad);margin-top:2px'>"+euro(monthExpenses)+"</div>"+
+      "<div class='tiny muted' style='margin-top:2px'>"+exps.length+(exps.length===1?" acquisto":" acquisti")+"</div>"+
+    "</div>"+
+  "</div>";
+
+  let expsHtml="";
+  if(!exps.length){
+    expsHtml="<p class='muted' style='margin:12px 0 6px'>Nessuna spesa registrata per questo mese.</p>";
+  } else {
+    expsHtml=exps.map(function(e){
+      const title=e.desc||expenseCatName(e.category);
+      const icon=expenseCatIcon(e.category);
+      return "<div class='list-item' style='cursor:pointer' onclick='formExpense(\""+e.id+"\")'>"+
+        "<div class='row'>"+
+          "<div class='row' style='gap:10px;justify-content:flex-start'>"+
+            "<span style='font-size:24px'>"+icon+"</span>"+
+            "<div>"+
+              "<div class='name' style='font-size:18px'>"+esc(title)+"</div>"+
+              "<div class='tiny'>"+nd(e.date)+" · "+esc(expenseCatName(e.category))+"</div>"+
+            "</div>"+
+          "</div>"+
+          "<div style='text-align:right'>"+
+            "<strong style='color:var(--bad);font-size:18px'>-"+euro(e.amount)+"</strong>"+
+            "<div class='tiny' style='color:var(--muted)'>Modifica ›</div>"+
+          "</div>"+
+        "</div>"+
+      "</div>";
+    }).join("");
+  }
+
+  html+="<div class='card'>"+
+    "<div class='row'>"+
+      "<div>"+
+        "<h3 style='margin:0'>Spese del mese</h3>"+
+        "<div class='tiny muted'>Totale: "+euro(monthExpenses)+"</div>"+
+      "</div>"+
+      "<button type='button' class='btn btn-soft btn-sm' onclick='formExpense()'>+ Nuova spesa</button>"+
+    "</div>"+
+    "<div style='margin-top:10px'>"+expsHtml+"</div>"+
+  "</div>";
+
   let debts="<p class='muted' style='margin-top:8px'>Nessuna cliente deve soldi.</p>";
   if(cred.length){
     debts=cred.map(function(x){
@@ -287,18 +387,23 @@ function vMoney(){
       return "<div class='list-item'><div class='row'><div class='name'>"+esc(x.c.name)+"</div><span class='chip debt'>"+euro(x.b)+"</span></div><div class='actions'><button type='button' class='btn btn-ok btn-sm' onclick='payOff(\""+x.c.id+"\")'>Segna pagato</button>"+(wa?"<a class='btn btn-soft btn-sm' href='"+wa+"'>WhatsApp</a>":"<button type='button' class='btn btn-ghost btn-sm' onclick='openClient(\""+x.c.id+"\")'>Apri</button>")+"</div></div>";
     }).join("");
   }
+  html+="<div class='card'>"+
+    "<div class='row'><h3>Mi devono</h3>"+(totalDebt>0.01?"<span class='chip debt'>Totale: "+euro(totalDebt)+"</span>":"")+"</div>"+
+    debts+
+  "</div>";
+
+  const monthList=monthDone.slice().sort(function(a,b){return (b.date+b.time).localeCompare(a.date+a.time)}).slice(0,25);
   let mov="";
   if(monthList.length){
     mov=monthList.map(function(a){
       const c=C(a.clientId);const s=S(a.serviceId);
-      return "<div class='list-item' onclick='openApt(\""+a.id+"\")'><div class='row'><div><div class='name'>"+esc(c?c.name:"Cliente")+"</div><div class='tiny'>"+nd(a.date)+" · "+esc(s?s.name:"")+"</div></div><strong>"+euro(a.paid||0)+"</strong></div></div>";
+      return "<div class='list-item' onclick='openApt(\""+a.id+"\")'><div class='row'><div><div class='name'>"+esc(c?c.name:"Cliente")+"</div><div class='tiny'>"+nd(a.date)+" · "+esc(s?s.name:"")+"</div></div><strong style='color:var(--ok)'>+"+euro(a.paid||0)+"</strong></div></div>";
     }).join("");
   }
+  html+="<div class='card'><h3>Dettaglio incassi ("+monthTitle+")</h3>"+(mov||"<p class='muted' style='margin-top:8px'>Nessun incasso in questo mese.</p>")+"</div>";
+
   const lastB=localStorage.getItem(BKEY);
-  return "<div class='card'><div class='muted'>Oggi</div><div class='money' style='font-size:36px'>"+euro(todayPaid)+"</div></div>"+
-    "<div class='card'><div class='muted'>Questa settimana</div><div class='money' style='font-size:32px'>"+euro(weekPaid)+"</div></div>"+
-    "<div class='card'><div class='muted'>Questo mese</div><div class='money' style='font-size:32px'>"+euro(monthPaid)+"</div></div>"+
-    "<div class='card'><h3>Mi devono</h3>"+debts+"</div>"+
-    "<div class='card'><h3>Di chi e</h3>"+(mov||"<p class='muted'>Nessun incasso questo mese.</p>")+"</div>"+
-    "<div class='card'><h3>Copia di sicurezza</h3><p class='tiny' style='margin-bottom:10px'>"+(lastB?"Ultima copia: "+lastB:"Non hai ancora salvato una copia")+"</p><div class='grid2'><button type='button' class='btn btn-soft' onclick='exp()'>Salva copia sul telefono</button><button type='button' class='btn btn-ghost' onclick='document.getElementById(\"imp\").click()'>Rimetti la copia</button></div><input id='imp' type='file' accept='application/json' class='hidden' onchange='imp(event)'></div>";
+  html+="<div class='card'><h3>Copia di sicurezza</h3><p class='tiny' style='margin-bottom:10px'>"+(lastB?"Ultima copia: "+lastB:"Non hai ancora salvato una copia")+"</p><div class='grid2'><button type='button' class='btn btn-soft' onclick='exp()'>Salva copia sul telefono</button><button type='button' class='btn btn-ghost' onclick='document.getElementById(\"imp\").click()'>Rimetti la copia</button></div><input id='imp' type='file' accept='application/json' class='hidden' onchange='imp(event)'></div>";
+
+  return html;
 }
