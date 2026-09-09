@@ -21,10 +21,10 @@ function formApt(id,time){
   h+="<label>Gia pagato €</label><input id='f_pay' type='number' step='0.5' value='"+(a.paid||0)+"'>";
   h+="<label>Cosa hai fatto</label><textarea id='f_w'>"+esc(a.work||"")+"</textarea>";
   h+="<label>Stato</label><select id='f_st'><option value='booked' "+(a.status==="booked"?"selected":"")+">Deve venire</option><option value='done' "+(a.status==="done"?"selected":"")+">Fatta</option><option value='cancelled' "+(a.status==="cancelled"?"selected":"")+">Annullata</option></select>";
-  if(id&&a.status==="booked") h+="<button type='button' class='btn btn-ok' style='margin-top:16px' onclick='markDonePaid(\""+id+"\")'>Fatto e pagato</button>";
-  if(wa) h+="<a class='btn btn-soft' style='width:100%;margin-top:8px' href='"+wa+"'>Scrivi su WhatsApp</a>";
-  h+="<button type='button' class='btn btn-primary' style='margin-top:8px' onclick='saveApt(\""+(id||"")+"\")'>Salva</button>";
-  if(id) h+="<button type='button' class='btn btn-bad' style='width:100%;margin-top:8px' onclick='delApt(\""+id+"\")'>Elimina</button>";
+  if(id&&a.status==="booked") h+="<button type='button' class='btn btn-ok' style='margin-top:16px' onclick='markDonePaid(\""+id+"\")'>"+I("check",18)+" Fatto e pagato</button>";
+  if(wa) h+="<a class='btn btn-wa' style='width:100%;margin-top:8px' href='"+wa+"'>"+I("wa",18)+" Scrivi su WhatsApp</a>";
+  h+="<button type='button' class='btn btn-primary' style='margin-top:8px' onclick='saveApt(\""+(id||"")+"\")'>"+I("check",18)+" Salva appuntamento</button>";
+  if(id) h+="<button type='button' class='btn btn-bad' style='width:100%;margin-top:8px' onclick='delApt(\""+id+"\")'>"+I("trash",18)+" Elimina appuntamento</button>";
   h+="<button type='button' class='btn btn-ghost' style='width:100%;margin-top:8px' onclick='closeModal()'>Chiudi</button>";
   openModal(h);
 }
@@ -71,7 +71,7 @@ function formClient(id,fromApt){
     h+="<button type='button' class='btn btn-bad btn-sm' style='width:100%;margin-top:6px' onclick='removeClientPhoto(\""+(id||"")+"\")'>Rimuovi foto</button>";
   }
   h+="<label>Richiamo dopo quante settimane</label><input id='c_r' type='number' value='"+(c.recallWeeks||3)+"'>";
-  h+="<button type='button' class='btn btn-primary' style='margin-top:16px' onclick='saveClient(\""+(id||"")+"\","+(fromApt?1:0)+")'>Salva cliente</button>";
+  h+="<button type='button' class='btn btn-primary' style='margin-top:16px' onclick='saveClient(\""+(id||"")+"\","+(fromApt?1:0)+")'>"+I("check",18)+" Salva cliente</button>";
   h+="<button type='button' class='btn btn-ghost' style='width:100%;margin-top:8px' onclick='closeModal()'>Annulla</button>";
   openModal(h);
 }
@@ -125,10 +125,10 @@ function openClient(id){
   if(c.allergies) h+="<p class='warn' style='margin-top:8px'>⚠ "+esc(c.allergies)+"</p>";
   h+="<div class='row' style='margin:14px 0'><span class='chip "+(b>0.01?"debt":"paid")+"'>"+(b>0.01?"Deve "+euro(b):"In pari")+"</span></div>";
   h+="<div class='grid4'>";
-  h+=ph?"<a class='btn btn-soft' href='tel:"+ph+"'>Chiama</a>":"<button type='button' class='btn btn-ghost' disabled>Chiama</button>";
-  h+=waR?"<a class='btn btn-soft' href='"+waR+"'>WhatsApp</a>":"<button type='button' class='btn btn-ghost' disabled>WhatsApp</button>";
-  h+="<button type='button' class='btn btn-primary' onclick='pickClient(\""+id+"\")'>Prenota</button>";
-  h+="<button type='button' class='btn btn-ghost' onclick='formClient(\""+id+"\")'>Modifica</button></div>";
+  h+=ph?"<a class='btn btn-soft' href='tel:"+ph+"'>"+I("phone",16)+" Chiama</a>":"<button type='button' class='btn btn-ghost' disabled>Chiama</button>";
+  h+=waR?"<a class='btn btn-wa' href='"+waR+"'>"+I("wa",16)+" WhatsApp</a>":"<button type='button' class='btn btn-ghost' disabled>WhatsApp</button>";
+  h+="<button type='button' class='btn btn-primary' onclick='pickClient(\""+id+"\")'>"+I("plus",16)+" Prenota</button>";
+  h+="<button type='button' class='btn btn-ghost' onclick='formClient(\""+id+"\")'>"+I("edit",16)+" Modifica</button></div>";
   const nails=[c.shape,c.length,c.color,c.product].filter(Boolean);
   h+="<h3 style='margin:18px 0 8px'>Unghie</h3>";
   if(nails.length||c.photo){
@@ -141,7 +141,7 @@ function openClient(id){
   } else {
     h+="<p class='muted'>Ancora niente in scheda unghie.</p>";
   }
-  if(b>0.01) h+="<button type='button' class='btn btn-ok' style='width:100%;margin-top:12px' onclick='payOff(\""+id+"\")'>Segna pagato</button>";
+  if(b>0.01) h+="<button type='button' class='btn btn-ok' style='width:100%;margin-top:12px' onclick='payOff(\""+id+"\")'>"+I("check",18)+" Segna pagato</button>";
   h+="<h3 style='margin:18px 0 8px'>Storico</h3>";
   if(!hist.length) h+="<p class='muted'>Nessuno storico.</p>";
   else hist.forEach(function(a){
@@ -149,7 +149,7 @@ function openClient(id){
     if(a.work) h+="<div style='margin-top:4px'>"+esc(a.work)+"</div>";
     h+="</div>";
   });
-  h+="<button type='button' class='btn btn-bad' style='width:100%;margin-top:16px' onclick='delClient(\""+id+"\")'>Elimina cliente</button>";
+  h+="<button type='button' class='btn btn-bad' style='width:100%;margin-top:16px' onclick='delClient(\""+id+"\")'>"+I("trash",18)+" Elimina cliente</button>";
   h+="<button type='button' class='btn btn-ghost' style='width:100%;margin-top:8px' onclick='closeModal()'>Chiudi</button>";
   openModal(h);
 }
@@ -187,10 +187,10 @@ function formExpense(id){
   h+="<label>Cosa hai comprato? (facoltativo)</label>";
   h+="<input id='e_desc' type='text' placeholder='Es. Top coat, punte fresa, lime...' value='"+esc(desc)+"'/>";
 
-  h+="<button type='submit' class='btn btn-primary' style='margin-top:20px;font-size:18px;padding:16px'>"+(x?"Salva Modifiche":"+ Aggiungi Spesa")+"</button>";
+  h+="<button type='submit' class='btn btn-primary' style='margin-top:20px;font-size:18px;padding:16px'>"+(x?I("check",18)+" Salva Modifiche":I("plus",18)+" Aggiungi Spesa")+"</button>";
 
   if(x){
-    h+="<button type='button' class='btn btn-bad' style='width:100%;margin-top:10px' onclick='delExpense(\""+id+"\")'>Elimina spesa</button>";
+    h+="<button type='button' class='btn btn-bad' style='width:100%;margin-top:10px' onclick='delExpense(\""+id+"\")'>"+I("trash",18)+" Elimina spesa</button>";
   }
   h+="<button type='button' class='btn btn-ghost' style='width:100%;margin-top:8px' onclick='closeModal()'>Annulla</button>";
   h+="</form>";

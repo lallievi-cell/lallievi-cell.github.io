@@ -58,6 +58,26 @@ function scrollToDay(iso){selectedDate=iso;const el=document.getElementById("day
 function scrollToToday(){const el=document.getElementById("day-"+today())||document.getElementById("day-today");if(!el)return;el.scrollIntoView({behavior:"smooth",block:"start"})}
 function goToday(){selectedDate=today();render();setTimeout(scrollToToday,80)}
 function markReminded(id){const a=db.appointments.find(x=>x.id===id);if(!a)return;a.reminded=true;save();render()}
+function I(name,sz,cls){
+  sz=sz||20;
+  const s='width="'+sz+'" height="'+sz+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="svg-ico '+(cls||'')+'"';
+  if(name==="phone") return '<svg '+s+'><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+  if(name==="wa") return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 24 24" fill="currentColor" class="svg-ico '+(cls||'')+'" style="color:#25D366"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.225 8.225 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.196 8.196 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.66c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.03-1.25-.75-.67-1.26-1.5-1.41-1.75-.14-.25-.02-.39.11-.51.11-.11.25-.29.38-.44.12-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.34-.76-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.71 4.3 3.8 2.52 1.09 2.52.73 2.98.69.45-.05 1.47-.6 1.68-1.18.21-.58.21-1.08.15-1.18-.06-.1-.23-.16-.48-.28"/></svg>';
+  if(name==="cal") return '<svg '+s+'><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><circle cx="12" cy="14" r="2"/></svg>';
+  if(name==="grid") return '<svg '+s+'><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>';
+  if(name==="users") return '<svg '+s+'><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+  if(name==="wallet") return '<svg '+s+'><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>';
+  if(name==="plus") return '<svg '+s+'><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
+  if(name==="check") return '<svg '+s+'><polyline points="20 6 9 17 4 12"/></svg>';
+  if(name==="clock") return '<svg '+s+'><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+  if(name==="left") return '<svg '+s+'><path d="m15 18-6-6 6-6"/></svg>';
+  if(name==="right") return '<svg '+s+'><path d="m9 18 6-6-6-6"/></svg>';
+  if(name==="trash") return '<svg '+s+'><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>';
+  if(name==="edit") return '<svg '+s+'><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>';
+  if(name==="backup") return '<svg '+s+'><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="3" y2="15"/></svg>';
+  if(name==="restore") return '<svg '+s+'><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>';
+  return "";
+}
 function go(t){
   tab=t;
   document.querySelectorAll(".nav button").forEach(function(b){b.classList.toggle("active",b.dataset.tab===t)});
@@ -67,9 +87,9 @@ function go(t){
   document.getElementById("subtitle").textContent=T[t][1];
   const fab=document.getElementById("fab");
   fab.classList.remove("hidden");
-  if(t==="clienti") fab.textContent="+ Cliente";
-  else if(t==="soldi") fab.textContent="+ Spesa";
-  else fab.textContent="+ Prenota";
+  if(t==="clienti") fab.innerHTML=I("plus",16)+" Cliente";
+  else if(t==="soldi") fab.innerHTML=I("plus",16)+" Spesa";
+  else fab.innerHTML=I("plus",16)+" Prenota";
   document.getElementById("clientSearch").classList.toggle("hidden",t!=="clienti");
   document.getElementById("filters").classList.toggle("hidden",t!=="clienti");
   if(t==="clienti") drawFilters();

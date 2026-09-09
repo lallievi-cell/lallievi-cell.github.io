@@ -7,12 +7,12 @@ function card(a,opts){
   const late=isLate(a);
   let actions="";
   if(opts.today && a.status==="booked"){
-    actions="<div class='actions'><button type='button' class='btn btn-ok btn-sm' onclick='markDonePaid(\""+id+"\")'>Fatto e pagato</button>";
-    if(wa) actions+="<a class='btn btn-soft btn-sm' href='"+wa+"'>WhatsApp</a>";
+    actions="<div class='actions'><button type='button' class='btn btn-ok btn-sm' onclick='markDonePaid(\""+id+"\")'>"+I("check",16)+" Fatto e pagato</button>";
+    if(wa) actions+="<a class='btn btn-wa btn-sm' href='"+wa+"'>"+I("wa",16)+" WhatsApp</a>";
     else actions+="<button type='button' class='btn btn-ghost btn-sm' onclick='openApt(\""+id+"\")'>Apri</button>";
-    actions+="</div><div class='actions'><button type='button' class='btn btn-ghost btn-sm' onclick='shiftApt(\""+id+"\",15)'>+15 min</button><button type='button' class='btn btn-bad btn-sm' onclick='cancelApt(\""+id+"\")'>Annulla</button></div>";
+    actions+="</div><div class='actions'><button type='button' class='btn btn-ghost btn-sm' onclick='shiftApt(\""+id+"\",15)'>+15 min</button><button type='button' class='btn btn-bad btn-sm' onclick='cancelApt(\""+id+"\")'>"+I("trash",15)+" Annulla</button></div>";
   }
-  return "<div class='card"+(opts.now?" now":"")+"'>"+(late?"<div class='chip late' style='margin-bottom:8px'>Sta aspettando</div>":"")+"<div class='apt' onclick='openApt(\""+id+"\")'><div class='timebox'>"+esc((a.time||"--:--").slice(0,5))+"<small>"+mins(a)+" min</small></div><div style='flex:1'><div class='name'>"+esc(c?c.name:"Cliente")+"</div><div class='muted'>"+esc(s?s.name:"Servizio")+"</div><div style='margin-top:8px;display:flex;gap:6px;flex-wrap:wrap'><span class='chip'>"+st+"</span><span class='chip "+(due>0.01?"debt":"paid")+"'>"+(due>0.01?"Deve "+euro(due):euro(a.price||0))+"</span></div></div></div>"+actions+"</div>";
+  return "<div class='card"+(opts.now?" now":"")+"'>"+(late?"<div class='chip late' style='margin-bottom:8px'>"+I("clock",14)+" Sta aspettando</div>":"")+"<div class='apt' onclick='openApt(\""+id+"\")'><div class='timebox'>"+esc((a.time||"--:--").slice(0,5))+"<small>"+mins(a)+" min</small></div><div style='flex:1'><div class='name'>"+esc(c?c.name:"Cliente")+"</div><div class='muted'>"+esc(s?s.name:"Servizio")+"</div><div style='margin-top:8px;display:flex;gap:6px;flex-wrap:wrap'><span class='chip'>"+st+"</span><span class='chip "+(due>0.01?"debt":"paid")+"'>"+(due>0.01?"Deve "+euro(due):euro(a.price||0))+"</span></div></div></div>"+actions+"</div>";
 }
 function vToday(){
   const list=apts(today());
@@ -34,8 +34,8 @@ function vToday(){
       const c=C(a.clientId);
       const wa=c?waLink(c.phone,msgRemind(a)):"";
       html+="<div class='list-item'><div class='name'>"+esc(c?c.name:"Cliente")+"</div><div class='tiny'>"+esc((a.time||"").slice(0,5))+" · "+mins(a)+" min</div>";
-      if(a.reminded) html+="<div class='chip paid' style='margin-top:8px'>Gia scritto</div>";
-      else if(wa) html+="<a class='btn btn-soft' style='width:100%;margin-top:10px' href='"+wa+"' onclick='markReminded(\""+a.id+"\")'>WhatsApp promemoria</a>";
+      if(a.reminded) html+="<div class='chip paid' style='margin-top:8px'>"+I("check",14)+" Gia scritto</div>";
+      else if(wa) html+="<a class='btn btn-wa' style='width:100%;margin-top:10px' href='"+wa+"' onclick='markReminded(\""+a.id+"\")'>"+I("wa",18)+" WhatsApp promemoria</a>";
       else html+="<p class='warn tiny' style='margin-top:8px'>Manca il numero</p>";
       html+="</div>";
     });
@@ -47,8 +47,8 @@ function vToday(){
     show.forEach(function(c){
       const lv=last(c.id);const wa=waLink(c.phone,msgRecall(c));
       html+="<div class='list-item'><div class='name'>"+esc(c.name)+"</div><div class='tiny'>ultima volta "+nd(lv.date)+"</div><div class='actions' style='margin-top:10px'>";
-      if(wa) html+="<a class='btn btn-soft btn-sm' href='"+wa+"'>WhatsApp</a>";
-      html+="<button type='button' class='btn btn-ghost btn-sm' onclick='pickClient(\""+c.id+"\")'>Prenota</button></div></div>";
+      if(wa) html+="<a class='btn btn-wa btn-sm' href='"+wa+"'>"+I("wa",16)+" WhatsApp</a>";
+      html+="<button type='button' class='btn btn-ghost btn-sm' onclick='pickClient(\""+c.id+"\")'>"+I("plus",15)+" Prenota</button></div></div>";
     });
     if(recall.length>3) html+="<button type='button' class='btn btn-ghost' style='width:100%;margin-top:8px' onclick='cFilter=\"recall\";go(\"clienti\")'>Vedi tutte ("+recall.length+")</button>";
     html+="</div>";
@@ -294,12 +294,12 @@ function vMoney(){
 
   html+="<div class='card' style='padding:12px 14px;margin-bottom:12px'>"+
     "<div class='row'>"+
-      "<button type='button' class='btn btn-ghost btn-sm' style='min-width:48px;font-size:20px;padding:8px 14px' onclick='shiftMoneyM(-1)'>←</button>"+
+      "<button type='button' class='btn btn-ghost btn-sm' style='min-width:48px;padding:8px 12px' onclick='shiftMoneyM(-1)'>"+I("left",22)+"</button>"+
       "<div style='text-align:center'>"+
         "<div style='font-size:21px;font-weight:900;text-transform:capitalize'>"+monthTitle+"</div>"+
         (!isCurrentMonth?"<button type='button' class='btn btn-soft btn-sm' style='margin-top:4px;padding:4px 10px;font-size:13px' onclick='goMoneyThisMonth()'>Torna a questo mese</button>":"<div class='tiny' style='color:var(--muted)'>Mese in corso</div>")+
       "</div>"+
-      "<button type='button' class='btn btn-ghost btn-sm' style='min-width:48px;font-size:20px;padding:8px 14px' onclick='shiftMoneyM(1)'>→</button>"+
+      "<button type='button' class='btn btn-ghost btn-sm' style='min-width:48px;padding:8px 12px' onclick='shiftMoneyM(1)'>"+I("right",22)+"</button>"+
     "</div>"+
   "</div>";
 
@@ -375,7 +375,7 @@ function vMoney(){
         "<h3 style='margin:0'>Spese del mese</h3>"+
         "<div class='tiny muted'>Totale: "+euro(monthExpenses)+"</div>"+
       "</div>"+
-      "<button type='button' class='btn btn-soft btn-sm' onclick='formExpense()'>+ Nuova spesa</button>"+
+      "<button type='button' class='btn btn-soft btn-sm' onclick='formExpense()'>"+I("plus",16)+" Nuova spesa</button>"+
     "</div>"+
     "<div style='margin-top:10px'>"+expsHtml+"</div>"+
   "</div>";
@@ -384,7 +384,7 @@ function vMoney(){
   if(cred.length){
     debts=cred.map(function(x){
       const wa=waLink(x.c.phone,msgDebt(x.c,x.b));
-      return "<div class='list-item'><div class='row'><div class='name'>"+esc(x.c.name)+"</div><span class='chip debt'>"+euro(x.b)+"</span></div><div class='actions'><button type='button' class='btn btn-ok btn-sm' onclick='payOff(\""+x.c.id+"\")'>Segna pagato</button>"+(wa?"<a class='btn btn-soft btn-sm' href='"+wa+"'>WhatsApp</a>":"<button type='button' class='btn btn-ghost btn-sm' onclick='openClient(\""+x.c.id+"\")'>Apri</button>")+"</div></div>";
+      return "<div class='list-item'><div class='row'><div class='name'>"+esc(x.c.name)+"</div><span class='chip debt'>"+euro(x.b)+"</span></div><div class='actions'><button type='button' class='btn btn-ok btn-sm' onclick='payOff(\""+x.c.id+"\")'>"+I("check",16)+" Segna pagato</button>"+(wa?"<a class='btn btn-wa btn-sm' href='"+wa+"'>"+I("wa",16)+" WhatsApp</a>":"<button type='button' class='btn btn-ghost btn-sm' onclick='openClient(\""+x.c.id+"\")'>Apri</button>")+"</div></div>";
     }).join("");
   }
   html+="<div class='card'>"+
@@ -403,7 +403,7 @@ function vMoney(){
   html+="<div class='card'><h3>Dettaglio incassi ("+monthTitle+")</h3>"+(mov||"<p class='muted' style='margin-top:8px'>Nessun incasso in questo mese.</p>")+"</div>";
 
   const lastB=localStorage.getItem(BKEY);
-  html+="<div class='card'><h3>Copia di sicurezza</h3><p class='tiny' style='margin-bottom:10px'>"+(lastB?"Ultima copia: "+lastB:"Non hai ancora salvato una copia")+"</p><div class='grid2'><button type='button' class='btn btn-soft' onclick='exp()'>Salva copia sul telefono</button><button type='button' class='btn btn-ghost' onclick='document.getElementById(\"imp\").click()'>Rimetti la copia</button></div><input id='imp' type='file' accept='application/json' class='hidden' onchange='imp(event)'></div>";
+  html+="<div class='card'><h3>Copia di sicurezza</h3><p class='tiny' style='margin-bottom:10px'>"+(lastB?"Ultima copia: "+lastB:"Non hai ancora salvato una copia")+"</p><div class='grid2'><button type='button' class='btn btn-soft' onclick='exp()'>"+I("backup",18)+" Salva copia sul telefono</button><button type='button' class='btn btn-ghost' onclick='document.getElementById(\"imp\").click()'>"+I("restore",18)+" Rimetti la copia</button></div><input id='imp' type='file' accept='application/json' class='hidden' onchange='imp(event)'></div>";
 
   return html;
 }
