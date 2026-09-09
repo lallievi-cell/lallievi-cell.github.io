@@ -12,7 +12,7 @@
   - `lallievi-cell/unghie-mamma`: il repository iniziale.
   - `lallievi-cell/lallievi-cell.github.io`: **il repository principale di produzione** pubblicato live su GitHub Pages a `https://lallievi-cell.github.io/`.
 - **Link Live Ufficiale**:
-  👉 **`https://lallievi-cell.github.io/`** (con cache-bust `v17`, scritte grandi, tasto "+ Prenota", WhatsApp rapido, spese e guadagno netto, ecc.).
+  👉 **`https://lallievi-cell.github.io/`** (con cache-bust `v18`, font Plus Jakarta Sans, icone SVG stile Lucide, bottoni tattili iOS e glassmorphism, spese e guadagno netto).
 - **Dove sono salvati i dati reali**: I dati (nomi clienti, numeri, storico trattamenti, appuntamenti, debiti, spese e incassi) risiedono nel `localStorage` del browser dell'iPhone, sotto la chiave `unghie-mamma-v1`.
 
 ---
