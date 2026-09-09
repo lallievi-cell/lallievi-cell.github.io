@@ -1,4 +1,4 @@
-const CACHE = "unghie-mamma-v4";
+const CACHE = "unghie-mamma-v5";
 const FILES = ["./index.html", "./manifest.json", "./icon.svg"];
 
 self.addEventListener("install", e => {

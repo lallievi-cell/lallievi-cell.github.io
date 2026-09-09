@@ -263,22 +263,23 @@ function initModalSwipe(){
     if(!bg.classList.contains("show"))return;
     if(e.touches.length!==1)return;
     if(e.target.closest("input, textarea, select, button")) return;
+    const handleEl=e.target.closest(".handle-wrap")||e.target.closest(".handle");
+    if(!handleEl) return;
+    startedOnHandle=true;
     startY=e.touches[0].clientY;
     currentY=startY;
     deltaY=0;
-    const rect=modal.getBoundingClientRect();
-    const touchTopOffset=startY-rect.top;
-    startedOnHandle=Boolean(e.target.closest(".handle-wrap")||e.target.closest(".handle")||touchTopOffset<=56);
     modal.style.transition="none";
   },{passive:true});
 
   modal.addEventListener("touchmove",function(e){
+    if(!startedOnHandle)return;
     if(!bg.classList.contains("show"))return;
     if(e.touches.length!==1)return;
     currentY=e.touches[0].clientY;
     deltaY=currentY-startY;
 
-    if(deltaY>0&&(startedOnHandle||modal.scrollTop<=0)){
+    if(deltaY>0){
       isDragging=true;
       if(e.cancelable)e.preventDefault();
       modal.style.transform="translateY("+deltaY+"px)";
@@ -291,12 +292,14 @@ function initModalSwipe(){
   },{passive:false});
 
   function finishSwipe(shouldDismiss){
+    if(!startedOnHandle&&!isDragging)return;
+    const wasDragging=isDragging;
     isDragging=false;
     startedOnHandle=false;
     if(deltaY>10){
       window.modalRecentlyDragged=Date.now();
     }
-    if(shouldDismiss){
+    if(wasDragging&&shouldDismiss){
       closeModal();
     }else{
       modal.style.transition="transform 0.22s cubic-bezier(0.32, 0.72, 0, 1)";
@@ -309,17 +312,11 @@ function initModalSwipe(){
   }
 
   modal.addEventListener("touchend",function(){
-    if(!isDragging){
-      startedOnHandle=false;
-      return;
-    }
     finishSwipe(deltaY>75);
   });
 
   modal.addEventListener("touchcancel",function(){
-    if(isDragging){
-      finishSwipe(false);
-    }
+    finishSwipe(false);
   });
 
   let mouseStartY=0,mouseDragging=false,mouseDeltaY=0;
@@ -327,7 +324,7 @@ function initModalSwipe(){
     if(!bg.classList.contains("show"))return;
     if(e.target.closest("input, textarea, select, button")) return;
     const isH=Boolean(e.target.closest(".handle-wrap")||e.target.closest(".handle"));
-    if(!isH && modal.scrollTop>0) return;
+    if(!isH) return;
     mouseDragging=true;
     mouseStartY=e.clientY;
     mouseDeltaY=0;
