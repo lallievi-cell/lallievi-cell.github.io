@@ -251,5 +251,116 @@ function imp(ev){
 }
 document.getElementById("clientSearch").addEventListener("input",function(e){q=e.target.value.toLowerCase();if(tab==="clienti")render()});
 document.getElementById("modalBg").addEventListener("click",function(e){if(e.target.id==="modalBg")closeModal()});
-load();selectedDate=today();go("oggi");
+
+function initModalSwipe(){
+  const modal=document.getElementById("modal");
+  const bg=document.getElementById("modalBg");
+  if(!modal||!bg)return;
+
+  let startY=0,currentY=0,deltaY=0,isDragging=false,startedOnHandle=false;
+
+  modal.addEventListener("touchstart",function(e){
+    if(!bg.classList.contains("show"))return;
+    if(e.touches.length!==1)return;
+    if(e.target.closest("input, textarea, select, button")) return;
+    startY=e.touches[0].clientY;
+    currentY=startY;
+    deltaY=0;
+    const rect=modal.getBoundingClientRect();
+    const touchTopOffset=startY-rect.top;
+    startedOnHandle=Boolean(e.target.closest(".handle-wrap")||e.target.closest(".handle")||touchTopOffset<=56);
+    modal.style.transition="none";
+  },{passive:true});
+
+  modal.addEventListener("touchmove",function(e){
+    if(!bg.classList.contains("show"))return;
+    if(e.touches.length!==1)return;
+    currentY=e.touches[0].clientY;
+    deltaY=currentY-startY;
+
+    if(deltaY>0&&(startedOnHandle||modal.scrollTop<=0)){
+      isDragging=true;
+      if(e.cancelable)e.preventDefault();
+      modal.style.transform="translateY("+deltaY+"px)";
+      const fade=Math.max(0,0.52*(1-deltaY/380));
+      bg.style.backgroundColor="rgba(25, 14, 18, "+fade+")";
+    }else if(isDragging&&deltaY<=0){
+      deltaY=0;
+      modal.style.transform="translateY(0)";
+    }
+  },{passive:false});
+
+  function finishSwipe(shouldDismiss){
+    isDragging=false;
+    startedOnHandle=false;
+    if(deltaY>10){
+      window.modalRecentlyDragged=Date.now();
+    }
+    if(shouldDismiss){
+      closeModal();
+    }else{
+      modal.style.transition="transform 0.22s cubic-bezier(0.32, 0.72, 0, 1)";
+      modal.style.transform="translateY(0)";
+      bg.style.backgroundColor="";
+      setTimeout(function(){
+        modal.style.transition="";
+      },220);
+    }
+  }
+
+  modal.addEventListener("touchend",function(){
+    if(!isDragging){
+      startedOnHandle=false;
+      return;
+    }
+    finishSwipe(deltaY>75);
+  });
+
+  modal.addEventListener("touchcancel",function(){
+    if(isDragging){
+      finishSwipe(false);
+    }
+  });
+
+  let mouseStartY=0,mouseDragging=false,mouseDeltaY=0;
+  modal.addEventListener("mousedown",function(e){
+    if(!bg.classList.contains("show"))return;
+    if(e.target.closest("input, textarea, select, button")) return;
+    const isH=Boolean(e.target.closest(".handle-wrap")||e.target.closest(".handle"));
+    if(!isH && modal.scrollTop>0) return;
+    mouseDragging=true;
+    mouseStartY=e.clientY;
+    mouseDeltaY=0;
+    modal.style.transition="none";
+  });
+  window.addEventListener("mousemove",function(e){
+    if(!mouseDragging)return;
+    mouseDeltaY=e.clientY-mouseStartY;
+    if(mouseDeltaY>0){
+      modal.style.transform="translateY("+mouseDeltaY+"px)";
+      const fade=Math.max(0,0.52*(1-mouseDeltaY/380));
+      bg.style.backgroundColor="rgba(25, 14, 18, "+fade+")";
+    }else{
+      modal.style.transform="translateY(0)";
+    }
+  });
+  window.addEventListener("mouseup",function(e){
+    if(!mouseDragging)return;
+    mouseDragging=false;
+    if(mouseDeltaY>10){
+      window.modalRecentlyDragged=Date.now();
+    }
+    if(mouseDeltaY>75){
+      closeModal();
+    }else{
+      modal.style.transition="transform 0.22s cubic-bezier(0.32, 0.72, 0, 1)";
+      modal.style.transform="translateY(0)";
+      bg.style.backgroundColor="";
+      setTimeout(function(){modal.style.transition="";},220);
+    }
+  });
+}
+
+load();selectedDate=today();go("oggi");initModalSwipe();
+
 
