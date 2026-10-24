@@ -364,6 +364,65 @@ function initModalSwipe(){
   });
 }
 
+function openServices(){
+  const list = (db.services || []).slice();
+  let h = "<h2>Prezzi dei trattamenti</h2>";
+  h += "<p class='muted' style='margin:8px 0 16px'>Questi sono i servizi che puoi scegliere quando prenoti un appuntamento.</p>";
+  if(!list.length){
+    h += "<p class='muted'>Nessun servizio ancora. Aggiungine uno sotto.</p>";
+  } else {
+    list.forEach(function(s){
+      h += "<div class='list-item' style='padding:14px 0'>";
+      h += "<div><strong style='font-size:20px'>"+esc(s.name)+"</strong><div class='tiny'>"+euro(s.price)+" · "+s.minutes+" minuti</div></div>";
+      h += "<div class='actions' style='margin-top:10px'><button type='button' class='btn btn-soft btn-sm' onclick='formService(\""+s.id+"\")'>Modifica</button><button type='button' class='btn btn-bad btn-sm' onclick='delService(\""+s.id+"\")'>Elimina</button></div>";
+      h += "</div>";
+    });
+  }
+  h += "<button type='button' class='btn btn-primary' style='margin-top:20px' onclick='formService()'>Aggiungi un nuovo servizio</button>";
+  h += "<button type='button' class='btn btn-ghost' style='width:100%;margin-top:8px' onclick='closeModal()'>Chiudi</button>";
+  openModal(h);
+}
+
+function formService(id){
+  const s = id ? (db.services||[]).find(x=>x.id===id) : {name:"", price:30, minutes:60};
+  let h = "<h2>"+(id?"Modifica servizio":"Nuovo servizio")+"</h2>";
+  h += "<label>Nome del trattamento</label><input id='s_name' value=\""+esc(s.name||"")+"\" placeholder='Es. Ricostruzione, Semipermanente, Pedicure...'>";
+  h += "<label>Prezzo (€)</label><input id='s_price' type='number' step='0.5' min='0' value='"+(s.price||0)+"'>";
+  h += "<label>Quanto tempo ci vuole (minuti)</label><input id='s_min' type='number' step='5' min='10' value='"+(s.minutes||60)+"'>";
+  h += "<button type='button' class='btn btn-primary' style='margin-top:20px' onclick='saveService(\""+(id||"")+"\")'>Salva</button>";
+  h += "<button type='button' class='btn btn-ghost' style='width:100%;margin-top:8px' onclick='openServices()'>Annulla</button>";
+  openModal(h);
+}
+
+function saveService(id){
+  const name = document.getElementById("s_name").value.trim();
+  const price = +document.getElementById("s_price").value || 0;
+  const minutes = +document.getElementById("s_min").value || 60;
+  if(!name){ alert("Serve il nome del servizio"); return; }
+  if(price < 0){ alert("Il prezzo non può essere negativo"); return; }
+  const rec = { id: id || uid(), name, price, minutes };
+  if(!db.services) db.services = [];
+  const i = db.services.findIndex(x => x.id === rec.id);
+  if(i >= 0) db.services[i] = rec;
+  else db.services.push(rec);
+  save();
+  toast("Servizio salvato!");
+  openServices();
+}
+
+function delService(id){
+  const s = (db.services||[]).find(x=>x.id===id);
+  if(!s) return;
+  const used = db.appointments.some(a => a.serviceId === id && a.status !== "deleted");
+  let msg = "Vuoi eliminare \""+s.name+"\"?";
+  if(used) msg += "\n\nAttenzione: è stato usato in alcuni appuntamenti. Quelli vecchi resteranno come sono, ma non potrai più sceglierlo per i nuovi.";
+  if(!confirm(msg)) return;
+  db.services = db.services.filter(x => x.id !== id);
+  save();
+  toast("Servizio eliminato");
+  openServices();
+}
+
 load();selectedDate=today();go("oggi");initModalSwipe();
 
 
