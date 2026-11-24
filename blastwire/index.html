@@ -11,7 +11,7 @@
   <!-- Google Fonts: Space Grotesk, Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
   <style>
     :root {
@@ -387,17 +387,32 @@
     ::-webkit-scrollbar-thumb { background: #26354c; border-radius: 99px; }
   
     /* ============================================================
-       COCKPIT — one screen. Board fills the middle, controls stay
-       pinned. No page scroll to reach DETONA or the tools.
+       ORDNANCE — blackened steel, brass, one screen.
+       The board is the game. Chrome stays quiet.
        ============================================================ */
+    :root {
+      --bg-deep: #090807;
+      --brass: #e4b15a;
+      --brass-dim: #8d6a2e;
+      --ember: #ff4d2e;
+      --ink: #f4efe6;
+      --muted: #8d8478;
+      --line: rgba(244, 239, 230, 0.12);
+      --steel: #141210;
+      --tile: #2c2823;
+    }
+
     html, body {
       height: 100dvh;
       max-height: 100dvh;
       overflow: hidden;
+      background: #090807 !important;
     }
     body {
       display: flex;
       flex-direction: column;
+      color: var(--ink);
+      font-family: "Rajdhani", "Avenir Next Condensed", sans-serif !important;
     }
     .bw-root {
       flex: 1 1 auto;
@@ -408,6 +423,29 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      background: #090807 !important;
+      background-image: radial-gradient(90% 50% at 50% 115%, rgba(228, 177, 90, 0.07), transparent 55%) !important;
+      color: var(--ink);
+      font-family: "Rajdhani", "Avenir Next Condensed", sans-serif !important;
+    }
+    body::before,
+    .bw-root::before { display: none !important; }
+
+    .font-display,
+    .font-mono-tech,
+    #toast-msg,
+    .tool-btn,
+    .detonate-btn,
+    .grid-cell {
+      font-family: "Rajdhani", "Avenir Next Condensed", sans-serif !important;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tac-panel {
+      background: var(--steel) !important;
+      border: 1px solid var(--line) !important;
+      box-shadow: none !important;
+      border-radius: 10px !important;
     }
 
     body > header,
@@ -421,21 +459,81 @@
       margin-right: auto;
     }
     body > header,
-    .bw-root > header { padding: 6px 8px 0 !important; }
+    .bw-root > header { padding: 8px 10px 0 !important; }
     body > header .tac-panel,
     .bw-root > header .tac-panel {
-      padding: 6px 8px !important;
-      gap: 6px !important;
-      border-radius: 16px;
+      padding: 8px 10px 8px !important;
+      gap: 8px !important;
+      background: transparent !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
     }
-    #hud-anomaly-text {
-      max-width: min(52vw, 280px);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+
+    /* Wordmark, not an app icon */
+    body > header .w-9,
+    .bw-root > header .w-9 {
+      width: 3px !important;
+      height: 22px !important;
+      min-width: 3px !important;
+      border-radius: 1px !important;
+      background: var(--brass) !important;
+      border: 0 !important;
+      box-shadow: none !important;
     }
-    #tutorial-banner { padding-bottom: 4px !important; }
-    #tutorial-banner .rounded-2xl { padding: 8px 10px !important; }
+    body > header .w-9 svg,
+    .bw-root > header .w-9 svg { display: none !important; }
+    body > header h1,
+    .bw-root > header h1 {
+      font-size: 18px !important;
+      letter-spacing: 0.24em !important;
+      font-weight: 700 !important;
+      color: var(--ink) !important;
+    }
+    #hud-sector-badge {
+      background: transparent !important;
+      border: 0 !important;
+      color: var(--brass) !important;
+      padding: 0 !important;
+      letter-spacing: 0.18em !important;
+      font-size: 12px !important;
+      font-weight: 700 !important;
+    }
+    #hud-anomaly-text { display: none !important; }
+
+    #btn-mute,
+    #btn-help {
+      width: 34px !important;
+      height: 34px !important;
+      border-radius: 6px !important;
+      background: transparent !important;
+      border: 1px solid var(--line) !important;
+      color: var(--muted) !important;
+    }
+    header .bg-slate-900\/90,
+    #hud-shield-box {
+      background: transparent !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 999px !important;
+      box-shadow: none !important;
+    }
+
+    #hud-progress-bar {
+      background: linear-gradient(90deg, #6d4c16, var(--brass)) !important;
+    }
+    header .h-2\.5 {
+      height: 4px !important;
+      background: #1c1916 !important;
+      border-color: transparent !important;
+    }
+
+    #tutorial-banner { padding: 0 10px 4px !important; }
+    #tutorial-banner .rounded-2xl {
+      border-radius: 8px !important;
+      background: #141210 !important;
+      border: 1px solid rgba(228, 177, 90, 0.35) !important;
+      box-shadow: none !important;
+    }
 
     body > main,
     .bw-root > main {
@@ -443,15 +541,13 @@
       min-height: 0;
       width: 100%;
       max-width: 1180px;
-      margin-left: auto;
-      margin-right: auto;
-      padding: 6px 8px max(8px, env(safe-area-inset-bottom)) !important;
-      gap: 6px !important;
+      margin: 0 auto;
+      padding: 4px 10px max(8px, env(safe-area-inset-bottom)) !important;
+      gap: 8px !important;
       align-items: stretch !important;
       justify-content: flex-start !important;
       overflow: hidden;
     }
-
     body > main > section,
     .bw-root > main > section {
       position: relative;
@@ -463,58 +559,80 @@
       display: flex;
       flex-direction: column;
       align-items: stretch !important;
+      gap: 6px;
     }
-
-    /* Mine / wired strip stays one tight line */
     body > main > section > div:first-child,
     .bw-root > main > section > div:first-child {
-      margin-bottom: 4px !important;
+      order: 1;
+      margin: 0 !important;
       flex: 0 0 auto;
+    }
+    body > main > section > div:first-child span,
+    .bw-root > main > section > div:first-child span {
+      background: transparent !important;
+      border-color: var(--line) !important;
+      border-radius: 999px !important;
+    }
+
+    /* Status line sits ABOVE the grid. Never on top of a cell. */
+    #toast-bar {
+      position: relative !important;
+      order: 2;
+      left: auto !important;
+      right: auto !important;
+      bottom: auto !important;
+      top: auto !important;
+      margin: 0 !important;
+      min-height: 0 !important;
+      height: 16px;
+      z-index: 1 !important;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+    }
+    #toast-msg {
+      background: transparent !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      color: var(--muted) !important;
+      font-size: 13px !important;
+      letter-spacing: 0.03em;
+      font-weight: 600;
+      padding: 0 !important;
+      text-align: left !important;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+      border-radius: 0 !important;
     }
 
     #board-wrapper {
+      order: 3;
       flex: 1 1 auto;
       min-height: 0;
       width: 100% !important;
       max-width: none !important;
       display: grid;
       place-items: center;
-      padding: 8px;
+      padding: 8px !important;
       container-type: size;
-      border-radius: 18px;
+      background: #0c0b0a !important;
+      border: 1px solid rgba(228, 177, 90, 0.34) !important;
+      border-radius: 6px !important;
+      box-shadow:
+        inset 0 0 0 5px #12100e,
+        0 18px 40px rgba(0, 0, 0, 0.45) !important;
     }
-    #board-wrapper::after {
-      content: "";
-      position: absolute;
-      inset: 5px;
-      border-radius: 14px;
-      pointer-events: none;
-      border: 1px solid rgba(6, 182, 212, 0.12);
-      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45);
-    }
+    #board-wrapper::after { display: none !important; }
     #grid-container {
       width: min(100cqw, 100cqh) !important;
       height: min(100cqw, 100cqh) !important;
       max-width: 100%;
       max-height: 100%;
+      gap: 3px !important;
       grid-auto-rows: minmax(0, 1fr);
-      align-content: stretch;
       z-index: 1;
-    }
-    #toast-bar {
-      position: absolute;
-      left: 10px;
-      right: 10px;
-      bottom: 10px;
-      margin: 0 !important;
-      min-height: 0 !important;
-      z-index: 28;
-      pointer-events: none;
-    }
-    #toast-msg {
-      background: rgba(7, 11, 17, 0.82) !important;
-      backdrop-filter: blur(6px);
-      max-width: 100%;
     }
 
     .grid-cell {
@@ -523,68 +641,127 @@
       height: 100%;
       min-width: 0;
       min-height: 0;
-      border-radius: 7px;
-      font-size: clamp(12px, 2.7vw, 22px) !important;
+      border-radius: 2px !important;
+      font-size: clamp(16px, 4.6vmin, 30px) !important;
+      font-weight: 700 !important;
       line-height: 1;
+      letter-spacing: 0;
     }
-    .cell-hidden {
-      background:
-        linear-gradient(160deg, rgba(255, 255, 255, 0.16), transparent 38%),
-        linear-gradient(155deg, #31465f 0%, #1a2738 55%, #121a26 100%);
-      border: 1px solid rgba(186, 210, 232, 0.28);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.22),
-        inset 0 -3px 0 rgba(0, 0, 0, 0.45),
-        0 1px 0 rgba(0, 0, 0, 0.35);
-    }
-    .cell-hidden::after {
-      content: "";
-      position: absolute;
-      width: 3px;
-      height: 3px;
-      border-radius: 99px;
-      top: 3px;
-      right: 3px;
-      background: rgba(226, 232, 240, 0.35);
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
-      pointer-events: none;
-    }
-    .cell-revealed {
-      background:
-        radial-gradient(circle at 50% 40%, rgba(56, 189, 248, 0.05), transparent 60%),
-        #0c121b;
-    }
-    .cell-wired { animation: wirePulse 1.15s infinite ease-in-out; }
+    .grid-cell.num-1,
+    .grid-cell.num-2,
+    .grid-cell.num-3,
+    .grid-cell.num-4,
+    .grid-cell.num-5,
+    .grid-cell.num-6,
+    .grid-cell.num-7,
+    .grid-cell.num-8 { text-shadow: none !important; }
+    .num-1 { color: #8ec5ff !important; }
+    .num-2 { color: #9ddeaf !important; }
+    .num-3 { color: #f0c36a !important; }
+    .num-4 { color: #f09a62 !important; }
+    .num-5 { color: #ff6b6b !important; }
+    .num-6 { color: #d2a6ff !important; }
+    .num-7 { color: #f4efe6 !important; }
+    .num-8 { color: #ff4d2e !important; }
 
-    /* Console dock — always on screen */
+    .cell-hidden {
+      background: linear-gradient(180deg, #3f3a33 0%, #2a261f 42%, #1b1815 100%) !important;
+      border: 1px solid #524b41 !important;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 236, 210, 0.16),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.55) !important;
+    }
+    .cell-hidden::after { display: none !important; }
+    .cell-hidden:hover {
+      background: linear-gradient(180deg, #4d463d, #322c26) !important;
+      border-color: var(--brass) !important;
+      transform: none !important;
+    }
+    .cell-hidden:active { transform: scale(0.97) !important; }
+    .cell-revealed {
+      background: #0e0d0b !important;
+      border: 1px solid rgba(244, 239, 230, 0.05) !important;
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.55) !important;
+    }
+    .cell-crater {
+      background: #140e0c !important;
+      border-color: rgba(255, 77, 46, 0.25) !important;
+    }
+
+    /* Hotspot is a brass corner, not a character sitting on the tile */
+    .cell-hotspot {
+      box-shadow:
+        inset 0 1px 0 rgba(255, 236, 210, 0.16),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.55) !important;
+    }
+    .cell-hotspot::before {
+      content: "" !important;
+      width: 0 !important;
+      height: 0 !important;
+      top: 0 !important;
+      right: 0 !important;
+      left: auto !important;
+      bottom: auto !important;
+      border-style: solid !important;
+      border-width: 0 8px 8px 0 !important;
+      border-color: transparent var(--brass) transparent transparent !important;
+      background: none !important;
+      font-size: 0 !important;
+      color: transparent !important;
+      text-shadow: none !important;
+      opacity: 1 !important;
+      position: absolute !important;
+    }
+    .cell-crystal::after {
+      content: "" !important;
+      width: 5px !important;
+      height: 5px !important;
+      top: 3px !important;
+      right: 3px !important;
+      border-radius: 1px !important;
+      background: #8ec5ff !important;
+      box-shadow: none !important;
+      font-size: 0 !important;
+    }
+
+    .cell-wired { animation: none !important; }
+    .cell-wired-c4 { background: #2a2116 !important; border-color: var(--brass) !important; box-shadow: inset 0 0 0 1px var(--brass) !important; }
+    .cell-wired-arc { background: #162028 !important; border-color: #8ec5ff !important; box-shadow: inset 0 0 0 1px #8ec5ff !important; }
+    .cell-wired-cross { background: #2a1614 !important; border-color: var(--ember) !important; box-shadow: inset 0 0 0 1px var(--ember) !important; }
+    .cell-wired-amp { background: #221828 !important; border-color: #d2a6ff !important; box-shadow: inset 0 0 0 1px #d2a6ff !important; }
+    .cell-pinned {
+      background: #241e14 !important;
+      border: 1px solid var(--brass) !important;
+      box-shadow: none !important;
+    }
+
     body > main > aside,
     .bw-root > main > aside {
       flex: 0 0 auto;
       width: 100% !important;
       max-width: none !important;
-      min-height: 0;
       display: flex;
       flex-direction: column;
       gap: 6px !important;
     }
     body > main > aside > .tac-panel,
     .bw-root > main > aside > .tac-panel {
-      padding: 8px !important;
-      border-radius: 16px;
+      padding: 6px !important;
+      border-radius: 10px !important;
+      background: #100e0c !important;
     }
-    /* Relics: one quiet line, not a third card you have to hunt */
     body > main > aside > .tac-panel:last-child,
     .bw-root > main > aside > .tac-panel:last-child {
-      padding: 6px 8px !important;
+      padding: 4px 8px !important;
     }
     #relics-container { min-height: 0 !important; }
-    #tool-desc-box {
-      margin-top: 6px !important;
-      padding: 6px 8px !important;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      line-height: 1.3 !important;
+    #relics-container .italic { display: none !important; }
+    #tool-desc-box { display: none !important; }
+
+    /* Drop the form labels. The buttons speak for themselves. */
+    .hazard-strip > .flex > span:first-child,
+    aside > .tac-panel:nth-child(2) > .flex.items-center.justify-between {
+      display: none !important;
     }
 
     aside .grid.grid-cols-3 {
@@ -592,13 +769,40 @@
       gap: 4px !important;
     }
     .tool-btn {
-      min-height: 52px;
-      padding: 6px 2px !important;
-      border-radius: 12px !important;
+      min-height: 54px;
+      padding: 4px 1px 3px !important;
+      border-radius: 6px !important;
+      background: #1c1916 !important;
+      border: 1px solid rgba(244, 239, 230, 0.1) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 236, 210, 0.06) !important;
+      gap: 1px !important;
     }
+    .tool-btn svg { width: 18px !important; height: 18px !important; }
     .tool-btn > span:first-of-type {
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1;
+      color: var(--ink) !important;
+      white-space: nowrap;
+    }
+    .tool-btn > span:nth-of-type(2) {
       font-size: 10px !important;
-      letter-spacing: 0.01em;
+      color: var(--brass) !important;
+      font-weight: 700 !important;
+    }
+    .tool-btn:hover:not(:disabled) { transform: none !important; }
+    .tool-btn.active-dig,
+    .tool-btn.active-pin,
+    .tool-btn.active-c4,
+    .tool-btn.active-arc,
+    .tool-btn.active-cross,
+    .tool-btn.active-amp,
+    .tool-btn.active-sonar {
+      background: #2a2114 !important;
+      border-color: var(--brass) !important;
+      box-shadow: inset 0 -2px 0 var(--brass) !important;
     }
 
     .hazard-strip {
@@ -606,66 +810,87 @@
       flex-wrap: wrap;
       align-items: center;
       gap: 6px;
-      padding: 8px !important;
-      border-radius: 16px;
-      box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.18);
-    }
-    .hazard-strip > .flex {
-      width: 100%;
-      margin-bottom: 0 !important;
+      padding: 6px !important;
+      border-radius: 10px !important;
+      background: #100e0c !important;
+      background-image: none !important;
+      box-shadow: none !important;
     }
     #btn-detonate {
       flex: 1 1 auto;
       width: auto !important;
-      min-height: 52px;
+      min-height: 48px;
       order: 2;
+      border-radius: 6px !important;
+      letter-spacing: 0.22em;
     }
+    #btn-detonate svg { display: none !important; }
+    .detonate-btn.disarmed {
+      background: transparent !important;
+      color: #6d665c !important;
+      border: 1px solid rgba(244, 239, 230, 0.14) !important;
+    }
+    .detonate-btn.armed {
+      background: var(--ember) !important;
+      color: #1a0906 !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      animation: none !important;
+    }
+    .detonate-btn.armed:hover { transform: none !important; box-shadow: none !important; }
     #btn-sonar-dock {
-      flex: 0 0 auto;
-      width: auto !important;
-      margin-top: 0 !important;
-      padding: 8px 10px !important;
+      flex: 0 0 48px;
+      width: 48px !important;
+      height: 48px !important;
+      margin: 0 !important;
+      padding: 0 !important;
       order: 3;
+      border-radius: 6px !important;
+      justify-content: center !important;
+      background: #1c1916 !important;
+      border: 1px solid rgba(157, 222, 175, 0.45) !important;
+      box-shadow: none !important;
     }
-    #btn-sonar-dock .text-\[10px\] { display: none; }
+    #btn-sonar-dock > .flex { gap: 0 !important; }
+    #btn-sonar-dock > .flex > div { display: none !important; }
+    #charge-sonar {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      background: transparent !important;
+      border: 0 !important;
+      color: #9ddeaf !important;
+      padding: 0 !important;
+      font-size: 10px !important;
+    }
     #salvo-est-box {
       width: 100%;
       order: 4;
-      margin-top: 0 !important;
+      margin: 0 !important;
+      background: transparent !important;
+      border: 0 !important;
+      padding: 0 4px !important;
     }
+    #detonate-preview-tag { color: var(--muted) !important; }
 
     @media (min-width: 980px) {
       body > main,
-      .bw-root > main {
-        flex-direction: row !important;
-        align-items: stretch !important;
-      }
+      .bw-root > main { flex-direction: row !important; }
       body > main > aside,
       .bw-root > main > aside {
-        width: 340px !important;
-        max-width: 340px !important;
+        width: 300px !important;
+        max-width: 300px !important;
       }
       aside .grid.grid-cols-3 {
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
       }
-      .tool-btn { min-height: 64px; }
-      #tool-desc-box {
-        white-space: normal;
-        overflow: visible;
-        text-overflow: unset;
-      }
+      .tool-btn { min-height: 72px; }
     }
-
     @media (max-height: 640px) {
-      #tool-desc-box,
       body > main > aside > .tac-panel:last-child,
-      .bw-root > main > aside > .tac-panel:last-child,
-      #hud-anomaly-text { display: none !important; }
-      .tool-btn { min-height: 44px; }
-      #btn-detonate { min-height: 44px; padding-top: 8px !important; padding-bottom: 8px !important; }
+      .bw-root > main > aside > .tac-panel:last-child { display: none !important; }
+      .tool-btn, #btn-detonate { min-height: 44px; }
     }
-
-
 
   </style>
 </head>
@@ -867,14 +1092,14 @@
           <!-- C4 -->
           <button data-tool="c4" class="tool-btn rounded-xl p-2.5 flex flex-col items-center justify-center gap-1 text-center">
             <svg class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="7" width="16" height="12" rx="2" fill="currentColor" fill-opacity="0.22"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/><circle cx="12" cy="13" r="2.2" fill="currentColor"/></svg>
-            <span class="text-[11px] font-bold text-amber-300 leading-none">C4 Base</span>
+            <span class="text-[11px] font-bold text-amber-300 leading-none">C4</span>
             <span id="charge-c4" class="font-mono-tech text-[10px] text-amber-200/95 font-bold">×6</span>
           </button>
 
           <!-- Arc Link -->
           <button data-tool="arc" class="tool-btn rounded-xl p-2.5 flex flex-col items-center justify-center gap-1 text-center">
             <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h6l-1 8 11-12h-6l-1-8z"/></svg>
-            <span class="text-[11px] font-bold text-cyan-300 leading-none">Ponte Arco</span>
+            <span class="text-[11px] font-bold text-cyan-300 leading-none">Arco</span>
             <span id="charge-arc" class="font-mono-tech text-[10px] text-cyan-200/95 font-bold">×3</span>
           </button>
 
@@ -888,7 +1113,7 @@
           <!-- Amplifier -->
           <button data-tool="amp" class="tool-btn rounded-xl p-2.5 flex flex-col items-center justify-center gap-1 text-center">
             <svg class="w-5 h-5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><polygon points="12 2 22 12 12 22 2 12 12 2" fill="currentColor" fill-opacity="0.22"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
-            <span class="text-[11px] font-bold text-purple-300 leading-none">Amplifica</span>
+            <span class="text-[11px] font-bold text-purple-300 leading-none">Amp</span>
             <span id="charge-amp" class="font-mono-tech text-[10px] text-purple-200/95 font-bold">×2</span>
           </button>
         </div>
