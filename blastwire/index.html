@@ -1,0 +1,3396 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>BLASTWIRE 2.0 // Tactical Demolition Roguelite</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tone.js for procedural sci-fi audio synthesis -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <!-- Google Fonts: Space Grotesk, Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-deep: #070b11;
+      --bg-panel: #101723;
+      --bg-panel-elev: #162030;
+      --border-subtle: rgba(148, 163, 184, 0.17);
+      --accent-amber: #f59e0b;
+      --accent-cyan: #06b6d4;
+      --accent-crimson: #ef4444;
+      --accent-emerald: #10b981;
+      --accent-violet: #a855f7;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-deep);
+      background-image:
+        radial-gradient(circle at 14% 10%, rgba(6, 182, 212, 0.11), transparent 36%),
+        radial-gradient(circle at 86% 84%, rgba(245, 158, 11, 0.10), transparent 40%),
+        radial-gradient(circle at 50% 45%, rgba(168, 85, 247, 0.05), transparent 50%),
+        linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px, 28px 28px;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Subtle CRT / tactical monitor scanline sheen */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.06) 0px,
+        rgba(0, 0, 0, 0.06) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+      z-index: 40;
+      opacity: 0.35;
+    }
+
+    .font-display { font-family: 'Space Grotesk', sans-serif; }
+    .font-mono-tech { font-family: 'JetBrains Mono', monospace; }
+
+    /* Elevated tactical panel */
+    .tac-panel {
+      background: linear-gradient(180deg, rgba(22, 32, 48, 0.93), rgba(11, 16, 26, 0.97));
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    /* Board frame with corner brackets & state glows */
+    .board-wrapper {
+      position: relative;
+      background: linear-gradient(180deg, #06090e 0%, #0a1019 100%);
+      border: 2px solid rgba(148, 163, 184, 0.22);
+      box-shadow:
+        0 0 0 1px rgba(6, 182, 212, 0.14),
+        0 24px 56px rgba(0, 0, 0, 0.72),
+        inset 0 0 28px rgba(0, 0, 0, 0.8);
+      border-radius: 18px;
+      padding: 9px;
+      transition: transform 0.06s ease-out, border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .board-wrapper.danger-low {
+      border-color: rgba(239, 68, 68, 0.65);
+      box-shadow: 0 0 26px rgba(239, 68, 68, 0.28), 0 24px 56px rgba(0, 0, 0, 0.72), inset 0 0 28px rgba(239, 68, 68, 0.15);
+    }
+    .board-wrapper.armed-ready {
+      border-color: rgba(245, 158, 11, 0.55);
+      box-shadow: 0 0 28px rgba(245, 158, 11, 0.22), 0 24px 56px rgba(0, 0, 0, 0.72), inset 0 0 24px rgba(0, 0, 0, 0.75);
+    }
+
+    /* Screen impact flash overlay inside board */
+    #board-flash {
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 25;
+      transition: opacity 0.18s ease-out;
+    }
+
+    /* Grid Tiles */
+    .grid-cell {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+      overflow: hidden;
+    }
+
+    .cell-hidden {
+      background: linear-gradient(155deg, #27374e 0%, #182333 100%);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13), inset 0 -2px 0 rgba(0, 0, 0, 0.5);
+    }
+    .cell-hidden:hover {
+      background: linear-gradient(155deg, #324663 0%, #202e44 100%);
+      border-color: rgba(56, 189, 248, 0.65);
+      transform: translateY(-1px);
+    }
+    .cell-hidden:active {
+      transform: scale(0.94);
+    }
+
+    /* Hotspot tile (Seismic Multiplier Zone: 2x points & +25cr if mine detonated here!) */
+    .cell-hotspot {
+      box-shadow: inset 0 0 0 1.5px rgba(251, 191, 36, 0.65), inset 0 0 12px rgba(245, 158, 11, 0.24) !important;
+    }
+    .cell-hotspot::before {
+      content: '⬡';
+      position: absolute;
+      bottom: 1px;
+      left: 3px;
+      font-size: 9px;
+      color: #fbbf24;
+      opacity: 0.9;
+      text-shadow: 0 0 6px rgba(251, 191, 36, 0.8);
+      pointer-events: none;
+    }
+
+    /* Pinned tactical marker */
+    .cell-pinned {
+      background: linear-gradient(155deg, #2a2f44 0%, #1a1e2e 100%);
+      border: 1.5px solid rgba(251, 191, 36, 0.65);
+      box-shadow: inset 0 0 10px rgba(251, 191, 36, 0.16);
+    }
+
+    .cell-armored {
+      background: repeating-linear-gradient(
+        -45deg,
+        #2b313e,
+        #2b313e 5px,
+        #1a1f28 5px,
+        #1a1f28 10px
+      );
+      border: 1px solid rgba(245, 158, 11, 0.52);
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.78);
+      cursor: not-allowed;
+    }
+
+    .cell-revealed {
+      background: #0d131d;
+      border: 1px solid rgba(148, 163, 184, 0.10);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.65);
+    }
+    .cell-revealed.chordable:hover {
+      border-color: rgba(6, 182, 212, 0.55);
+      background: #131e2e;
+    }
+    .cell-revealed.chord-ready {
+      border-color: rgba(16, 185, 129, 0.35);
+    }
+
+    .cell-crater {
+      background: radial-gradient(circle at center, #20141a 0%, #0b0f16 78%);
+      border: 1px solid rgba(239, 68, 68, 0.26);
+      box-shadow: inset 0 0 12px rgba(239, 68, 68, 0.22);
+    }
+
+    /* Wired Mine Modules */
+    .cell-wired {
+      border-width: 1.5px;
+      animation: wirePulse 1.7s infinite ease-in-out;
+    }
+    .cell-wired-c4 {
+      background: linear-gradient(145deg, #472811, #241208);
+      border-color: #f59e0b;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.42), inset 0 0 9px rgba(245, 158, 11, 0.25);
+    }
+    .cell-wired-arc {
+      background: linear-gradient(145deg, #0b3a4a, #061e28);
+      border-color: #06b6d4;
+      box-shadow: 0 0 14px rgba(6, 182, 212, 0.46), inset 0 0 9px rgba(6, 182, 212, 0.25);
+    }
+    .cell-wired-cross {
+      background: linear-gradient(145deg, #4a141b, #24080c);
+      border-color: #ef4444;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.46), inset 0 0 9px rgba(239, 68, 68, 0.25);
+    }
+    .cell-wired-amp {
+      background: linear-gradient(145deg, #391952, #1c0b2b);
+      border-color: #a855f7;
+      box-shadow: 0 0 16px rgba(168, 85, 247, 0.5), inset 0 0 9px rgba(168, 85, 247, 0.3);
+    }
+
+    .cell-sonar-ping {
+      border-color: #10b981 !important;
+      box-shadow: 0 0 18px rgba(16, 185, 129, 0.78), inset 0 0 12px rgba(16, 185, 129, 0.38) !important;
+      animation: sonarBlink 1.1s infinite ease-in-out;
+    }
+
+    /* Interactive Tutorial Spotlight */
+    .cell-tut-target {
+      border: 2px solid #38bdf8 !important;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35), 0 0 22px rgba(56, 189, 248, 0.85) !important;
+      animation: tutPulse 1.1s infinite ease-in-out !important;
+      z-index: 15;
+    }
+    .btn-tut-target {
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.45), 0 0 20px rgba(56, 189, 248, 0.75) !important;
+      animation: tutPulse 1.1s infinite ease-in-out !important;
+    }
+
+    .cell-crystal::after {
+      content: '◆';
+      position: absolute;
+      top: 1px;
+      right: 3px;
+      font-size: 9px;
+      color: #38bdf8;
+      text-shadow: 0 0 7px #38bdf8;
+      pointer-events: none;
+    }
+
+    /* Minesweeper High-Contrast Dark Mode Numbers */
+    .num-1 { color: #38bdf8; text-shadow: 0 0 9px rgba(56, 189, 248, 0.4); }
+    .num-2 { color: #34d399; text-shadow: 0 0 9px rgba(52, 211, 153, 0.4); }
+    .num-3 { color: #fbbf24; text-shadow: 0 0 9px rgba(251, 191, 36, 0.45); }
+    .num-4 { color: #fb923c; text-shadow: 0 0 9px rgba(251, 146, 60, 0.5); }
+    .num-5 { color: #f43f5e; text-shadow: 0 0 9px rgba(244, 63, 94, 0.5); }
+    .num-6 { color: #c084fc; text-shadow: 0 0 9px rgba(192, 132, 252, 0.5); }
+    .num-7 { color: #f8fafc; text-shadow: 0 0 10px rgba(248, 250, 252, 0.55); }
+    .num-8 { color: #ef4444; text-shadow: 0 0 12px rgba(239, 68, 68, 0.8); }
+
+    /* Tool dock buttons */
+    .tool-btn {
+      position: relative;
+      transition: all 0.15s ease;
+      border: 1.5px solid rgba(148, 163, 184, 0.18);
+      background: linear-gradient(180deg, #1b2638, #111926);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+    .tool-btn:hover:not(:disabled) {
+      border-color: rgba(148, 163, 184, 0.5);
+      transform: translateY(-1px);
+    }
+    .tool-btn.active-dig {
+      border-color: #94a3b8;
+      background: linear-gradient(180deg, #2d3e56, #1b2636);
+      box-shadow: 0 0 15px rgba(148, 163, 184, 0.35);
+    }
+    .tool-btn.active-pin {
+      border-color: #fbbf24;
+      background: linear-gradient(180deg, #3c3419, #221d0e);
+      box-shadow: 0 0 15px rgba(251, 191, 36, 0.32);
+    }
+    .tool-btn.active-c4 {
+      border-color: #f59e0b;
+      background: linear-gradient(180deg, #4f2c0d, #291607);
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.42);
+    }
+    .tool-btn.active-arc {
+      border-color: #06b6d4;
+      background: linear-gradient(180deg, #0d3d4f, #07202b);
+      box-shadow: 0 0 16px rgba(6, 182, 212, 0.42);
+    }
+    .tool-btn.active-cross {
+      border-color: #ef4444;
+      background: linear-gradient(180deg, #50151d, #290a0e);
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.42);
+    }
+    .tool-btn.active-amp {
+      border-color: #a855f7;
+      background: linear-gradient(180deg, #3d1b57, #1f0d2e);
+      box-shadow: 0 0 16px rgba(168, 85, 247, 0.46);
+    }
+    .tool-btn.active-sonar {
+      border-color: #10b981;
+      background: linear-gradient(180deg, #0d4534, #07241b);
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.44);
+    }
+
+    /* Detonate CTA Button */
+    .detonate-btn {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.18s ease;
+    }
+    .detonate-btn.armed {
+      background: linear-gradient(135deg, #dc2626 0%, #ea580c 52%, #d97706 100%);
+      border: 2px solid #fecaca;
+      box-shadow: 0 0 28px rgba(239, 68, 68, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+      animation: armedGlow 1.5s infinite ease-in-out;
+    }
+    .detonate-btn.armed:hover {
+      transform: translateY(-2px) scale(1.01);
+      box-shadow: 0 0 36px rgba(239, 68, 68, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    }
+    .detonate-btn.armed:active {
+      transform: scale(0.98);
+    }
+    .detonate-btn.disarmed {
+      background: #151d2b;
+      border: 2px solid rgba(148, 163, 184, 0.18);
+      color: #64748b;
+      cursor: not-allowed;
+    }
+
+    .hazard-strip {
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(245, 158, 11, 0.13),
+        rgba(245, 158, 11, 0.13) 8px,
+        transparent 8px,
+        transparent 16px
+      );
+    }
+
+    /* Combo Callout Banner over board */
+    #combo-callout {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%) scale(0.85);
+      z-index: 30;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    #combo-callout.show {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    @keyframes wirePulse {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.24); }
+    }
+    @keyframes sonarBlink {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    @keyframes tutPulse {
+      0%, 100% { transform: scale(1); filter: brightness(1); }
+      50% { transform: scale(1.06); filter: brightness(1.25); }
+    }
+    @keyframes armedGlow {
+      0%, 100% { box-shadow: 0 0 22px rgba(239, 68, 68, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.32); }
+      50% { box-shadow: 0 0 36px rgba(245, 158, 11, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.48); }
+    }
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.93) translateY(10px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .animate-pop {
+      animation: popIn 0.24s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #090e16; }
+    ::-webkit-scrollbar-thumb { background: #26354c; border-radius: 99px; }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen text-slate-100">
+
+  <!-- TOP COMMAND HUD -->
+  <header class="w-full max-w-6xl mx-auto px-3 pt-3 pb-2 relative z-30">
+    <div class="tac-panel rounded-2xl px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
+      <!-- Brand & Sector -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 via-orange-500 to-red-600 flex items-center justify-center shadow-lg shadow-red-900/40 border border-amber-300/45 shrink-0">
+          <svg class="w-5 h-5 text-slate-950" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-display font-bold text-base sm:text-lg tracking-wider text-white leading-none">BLASTWIRE</h1>
+            <span id="hud-sector-badge" class="font-mono-tech text-[11px] font-bold px-2 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/35">SETTORE 1</span>
+          </div>
+          <p id="hud-anomaly-text" class="text-[11px] text-slate-400 leading-tight mt-0.5">Condizioni nominali</p>
+        </div>
+      </div>
+
+      <!-- Score Progress Bar -->
+      <div class="flex-1 min-w-[190px] max-w-sm order-3 sm:order-2 w-full sm:w-auto">
+        <div class="flex items-baseline justify-between mb-1">
+          <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Quota Demolizione</span>
+          <span class="font-mono-tech text-xs sm:text-sm font-extrabold">
+            <span id="hud-score" class="text-amber-400">0</span>
+            <span class="text-slate-500">/</span>
+            <span id="hud-target" class="text-slate-200">350</span>
+            <span class="text-[10px] text-slate-400 ml-0.5">PT</span>
+          </span>
+        </div>
+        <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-700/75 p-0.5 relative">
+          <div id="hud-progress-bar" class="h-full rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 transition-all duration-300 ease-out" style="width: 0%"></div>
+          <!-- Estimated salvo preview bar overlay -->
+          <div id="hud-est-bar" class="absolute top-0.5 bottom-0.5 rounded-full bg-cyan-400/45 transition-all duration-200 pointer-events-none" style="left: 0%; width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Core Stats & Quick Actions -->
+      <div class="flex items-center gap-1.5 sm:gap-2.5 order-2 sm:order-3">
+        <!-- Shields -->
+        <div id="hud-shield-box" class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-700/65 px-2.5 py-1.5 rounded-xl transition-colors" title="Scudi rimasti">
+          <svg class="w-4 h-4 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg>
+          <span id="hud-shields" class="font-mono-tech text-xs sm:text-sm font-bold text-cyan-200">3/3</span>
+        </div>
+        <!-- Moves -->
+        <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-700/65 px-2.5 py-1.5 rounded-xl" title="Mosse di scavo rimaste">
+          <svg class="w-4 h-4 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L18.5 9.5M4 20l6-6m2.5-9.5L20 12l-2.5 2.5L10 7l2.5-2.5z"/></svg>
+          <span id="hud-moves" class="font-mono-tech text-xs sm:text-sm font-bold text-amber-200">22</span>
+        </div>
+        <!-- Credits -->
+        <div class="flex items-center gap-1 bg-slate-900/90 border border-slate-700/65 px-2.5 py-1.5 rounded-xl" title="Crediti per l'Officina Tattica">
+          <span class="text-emerald-400 font-mono-tech font-extrabold text-sm">₡</span>
+          <span id="hud-credits" class="font-mono-tech text-xs sm:text-sm font-bold text-emerald-300">0</span>
+        </div>
+        <!-- Tutorial / Mute / Help -->
+        <button id="btn-mute" class="w-9 h-9 rounded-xl bg-slate-800/85 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center transition" title="Attiva/Disattiva Audio">
+          <span id="mute-icon">🔊</span>
+        </button>
+        <button id="btn-help" class="w-9 h-9 rounded-xl bg-slate-800/85 hover:bg-slate-700 border border-slate-700 text-slate-200 font-mono-tech text-xs font-bold flex items-center justify-center transition" title="Manuale Tattico">
+          ?
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- INTERACTIVE TUTORIAL BANNER (Visible only during Guided Tutorial) -->
+  <section id="tutorial-banner" class="hidden w-full max-w-6xl mx-auto px-3 pb-2 relative z-30">
+    <div class="rounded-2xl px-4 py-3 bg-gradient-to-r from-cyan-950/95 via-slate-900/95 to-indigo-950/95 border border-cyan-400/50 shadow-lg shadow-cyan-950/50 flex flex-wrap items-center justify-between gap-3 animate-pop">
+      <div class="flex items-start sm:items-center gap-3 flex-1 min-w-[240px]">
+        <span id="tut-step-badge" class="font-mono-tech text-xs font-extrabold px-2.5 py-1 rounded-lg bg-cyan-400 text-slate-950 shrink-0">STEP 1/4</span>
+        <div>
+          <div id="tut-title" class="font-display font-bold text-sm text-cyan-200">Ricognizione Iniziale</div>
+          <p id="tut-desc" class="text-xs text-slate-200 leading-snug mt-0.5">Clicca la cella evidenziata in blu per scavare un varco sicuro.</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btn-tut-finish" class="hidden px-4 py-2 rounded-xl font-display font-bold text-xs tracking-wider text-slate-950 bg-gradient-to-r from-emerald-400 to-cyan-400 hover:brightness-110 shadow transition">
+          INIZIA SETTORE 1 →
+        </button>
+        <button id="btn-tut-skip" class="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-600 text-[11px] font-mono-tech text-slate-300 transition">
+          Salta Tutorial
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="flex-1 w-full max-w-6xl mx-auto px-3 pb-6 flex flex-col lg:flex-row items-center lg:items-start justify-center gap-4 relative z-20">
+
+    <!-- LEFT / CENTER: BOARD COLUMN -->
+    <section class="w-full lg:w-auto flex flex-col items-center">
+      <!-- Live Tactical Info Strip above board -->
+      <div class="w-full max-w-[520px] flex flex-wrap items-center justify-between gap-2 px-1 mb-2 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/90 border border-slate-800 text-slate-300 font-mono-tech">
+            <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+            Mine: <strong id="hud-mines-left" class="text-rose-400">12</strong>
+          </span>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/90 border border-slate-800 text-slate-300 font-mono-tech">
+            Cablate: <strong id="hud-wired-count" class="text-amber-400">0</strong>
+          </span>
+          <button id="btn-disarm-all" class="hidden inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-mono-tech text-slate-300 hover:text-amber-300 transition" title="Rimuovi tutte le cariche piazzate senza sprecarle">
+            ↺ Disarma
+          </button>
+        </div>
+        <div id="hud-chain-pill" class="hidden items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-500/20 border border-purple-400/50 text-purple-200 font-mono-tech font-bold">
+          <span>⚡</span> <span id="hud-chain-text">×1.0</span>
+        </div>
+      </div>
+
+      <!-- Board Container with overlaid Canvas FX -->
+      <div id="board-wrapper" class="board-wrapper w-full max-w-[520px]">
+        <!-- Combo Callout Pill -->
+        <div id="combo-callout" class="px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500 via-rose-500 to-purple-600 text-white font-display font-bold text-xs sm:text-sm tracking-widest shadow-xl border border-white/30">
+          CATENA LETALE!
+        </div>
+        <!-- Impact Flash -->
+        <div id="board-flash"></div>
+        <!-- Dynamic CSS Grid -->
+        <div id="grid-container" class="relative w-full grid gap-1 sm:gap-1.5">
+          <!-- Cells injected dynamically -->
+        </div>
+        <!-- Overlaid Canvas for Preview Lasers, Ghost Hover, Sparks, Arcs, Shockwaves & Popups -->
+        <canvas id="fx-canvas" class="absolute inset-0 w-full h-full pointer-events-none z-20 rounded-xl"></canvas>
+      </div>
+
+      <!-- Toast Message Area -->
+      <div id="toast-bar" class="w-full max-w-[520px] mt-2 min-h-[32px] flex items-center justify-center">
+        <span id="toast-msg" class="text-xs font-mono-tech text-slate-400 text-center px-3 py-1 rounded-lg bg-slate-900/75 border border-slate-800/85 transition-all">
+          Clicca una cella per iniziare. Tasto destro o tieni premuto per cablare.
+        </span>
+      </div>
+    </section>
+
+    <!-- RIGHT / BOTTOM: TACTICAL CONTROL DOCK -->
+    <aside class="w-full max-w-[520px] lg:w-[350px] flex flex-col gap-3">
+
+      <!-- DETONATION TRIGGER PANEL -->
+      <div class="tac-panel rounded-2xl p-3.5 hazard-strip">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[11px] uppercase tracking-widest font-bold text-slate-300">Innesco Remoto</span>
+          <span id="detonate-preview-tag" class="font-mono-tech text-xs text-slate-400">Nessuna mina cablata</span>
+        </div>
+
+        <button id="btn-detonate" disabled class="detonate-btn disarmed w-full py-3.5 px-4 rounded-xl font-display font-bold text-base sm:text-lg tracking-wider flex items-center justify-center gap-2.5">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm-5.2 9.5a6.5 6.5 0 012.7-4.8l1.6 2.7a3.5 3.5 0 00-1.3 2.1H6.8zm10.4 0h-3a3.5 3.5 0 00-1.3-2.1l1.6-2.7a6.5 6.5 0 012.7 4.8z"/></svg>
+          <span id="btn-detonate-label">DETONA</span>
+          <span id="btn-detonate-badge" class="hidden font-mono-tech text-xs bg-black/35 px-2 py-0.5 rounded-md border border-white/25">0</span>
+        </button>
+
+        <!-- Estimated Salvo Yield readout (Balatro-style preview without leaking mines!) -->
+        <div id="salvo-est-box" class="hidden mt-2 px-3 py-1.5 rounded-xl bg-slate-950/85 border border-amber-500/30 flex items-center justify-between text-xs font-mono-tech">
+          <span class="text-slate-400">Stima se esatte:</span>
+          <span id="salvo-est-value" class="font-extrabold text-amber-300">~0 PT (×1.0)</span>
+        </div>
+
+        <!-- Dedicated Sonar Quick Button -->
+        <button data-tool="sonar" id="btn-sonar-dock" class="tool-btn w-full mt-2.5 py-2 px-3 rounded-xl flex items-center justify-between gap-2 text-left">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-emerald-500/15 border border-emerald-500/35 flex items-center justify-center text-emerald-400">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>
+            </span>
+            <div>
+              <div class="text-xs font-bold text-emerald-300 leading-tight">Sonar Tattico 3×3</div>
+              <div class="text-[10px] text-slate-400 leading-tight">Rivela 1 mina sicura (risolve i 50/50)</div>
+            </div>
+          </div>
+          <span id="charge-sonar" class="font-mono-tech text-xs font-extrabold px-2 py-0.5 rounded-md bg-emerald-950/80 border border-emerald-500/40 text-emerald-300">×1</span>
+        </button>
+      </div>
+
+      <!-- MODULE & TOOL SELECTOR (Clean 2x3 grid) -->
+      <div class="tac-panel rounded-2xl p-3.5">
+        <div class="flex items-center justify-between mb-2.5">
+          <span class="text-[11px] uppercase tracking-widest font-bold text-slate-300">Strumenti & Moduli</span>
+          <span class="text-[10px] font-mono-tech text-slate-500 hidden sm:inline">Q · F · 1-5 · Spazio</span>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2">
+          <!-- Dig -->
+          <button data-tool="dig" class="tool-btn active-dig rounded-xl p-2.5 flex flex-col items-center justify-center gap-1 text-center">
+            <svg class="w-5 h-5 text-slate-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L18.5 9.5M4 20l6-6m2.5-9.5L20 12l-2.5 2.5L10 7l2.5-2.5z"/></svg>
+            <span class="text-[11px] font-bold text-slate-100 leading-none">Scava</span>
+            <span class="font-mono-tech text-[10px] text-slate-400">1 Mossa</span>
+          </button>
+
+          <!-- Tactical Pin / Flag -->
+          <button data-tool="pin" class="tool-btn rounded-xl p-2.5 flex flex-col items-center justify-center gap-1 text-center">
+            <svg class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3v18h2v-7h9l-2-4 2-4H8V3H6z"/></svg>
+            <span class="text-[11px] font-bold text-amber-200 leading-none">Nota</span>
+            <span class="font-mono-tech text-[10px] text-slate-400">Gratis</span>
+          </button>
+
+          <!-- C4 -->
+          <button data-tool="c4" class="tool-btn rounded-xl p-2.5 flex flex-col items-center justify-center gap-1 text-center">
+            <svg class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="7" width="16" height="12" rx="2" fill="currentColor" fill-opacity="0.22"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/><circle cx="12" cy="13" r="2.2" fill="currentColor"/></svg>
+            <span class="text-[11px] font-bold text-amber-300 leading-none">C4 Base</span>
+            <span id="charge-c4" class="font-mono-tech text-[10px] text-amber-200/95 font-bold">×6</span>
+          </button>
+
+          <!-- Arc Link -->
+          <button data-tool="arc" class="tool-btn rounded-xl p-2.5 flex flex-col items-center justify-center gap-1 text-center">
+            <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h6l-1 8 11-12h-6l-1-8z"/></svg>
+            <span class="text-[11px] font-bold text-cyan-300 leading-none">Ponte Arco</span>
+            <span id="charge-arc" class="font-mono-tech text-[10px] text-cyan-200/95 font-bold">×3</span>
+          </button>
+
+          <!-- Cross Blast -->
+          <button data-tool="cross" class="tool-btn rounded-xl p-2.5 flex flex-col items-center justify-center gap-1 text-center">
+            <svg class="w-5 h-5 text-rose-400" viewBox="0 0 24 24" fill="currentColor"><path d="M10 3h4v7h7v4h-7v7h-4v-7H3v-4h7V3z"/></svg>
+            <span class="text-[11px] font-bold text-rose-300 leading-none">Croce</span>
+            <span id="charge-cross" class="font-mono-tech text-[10px] text-rose-200/95 font-bold">×2</span>
+          </button>
+
+          <!-- Amplifier -->
+          <button data-tool="amp" class="tool-btn rounded-xl p-2.5 flex flex-col items-center justify-center gap-1 text-center">
+            <svg class="w-5 h-5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><polygon points="12 2 22 12 12 22 2 12 12 2" fill="currentColor" fill-opacity="0.22"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+            <span class="text-[11px] font-bold text-purple-300 leading-none">Amplifica</span>
+            <span id="charge-amp" class="font-mono-tech text-[10px] text-purple-200/95 font-bold">×2</span>
+          </button>
+        </div>
+
+        <!-- Active Tool Description Card -->
+        <div id="tool-desc-box" class="mt-2.5 p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 leading-relaxed">
+          <strong class="text-white">Scava:</strong> Rivela celle sicure per leggere i numeri. Clicca un numero con le sue mine cablate/segnate attorno per aprire i vicini in un colpo!
+        </div>
+      </div>
+
+      <!-- ACTIVE RELICS PANEL -->
+      <div class="tac-panel rounded-2xl p-3.5">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[11px] uppercase tracking-widest font-bold text-slate-300">Reliquie Attive</span>
+          <span id="relic-count-tag" class="font-mono-tech text-[11px] text-slate-500">0 installate</span>
+        </div>
+        <div id="relics-container" class="flex flex-wrap gap-1.5 min-h-[38px] items-center">
+          <span class="text-xs text-slate-500 italic">Completa il Settore 1 per sbloccare l'Officina Tattica.</span>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- START / BRIEFING MODAL -->
+  <div id="modal-start" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="tac-panel animate-pop max-w-lg w-full rounded-3xl p-6 border border-cyan-500/35 shadow-2xl">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-orange-500 to-rose-600 flex items-center justify-center shadow-lg shadow-orange-600/35">
+            <svg class="w-7 h-7 text-slate-950" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+          </div>
+          <div>
+            <h2 class="font-display font-bold text-2xl tracking-wider text-white leading-none">BLASTWIRE</h2>
+            <p class="text-[11px] font-mono-tech text-cyan-400 uppercase tracking-widest mt-1">Tactical Demolition Roguelite</p>
+          </div>
+        </div>
+        <div id="start-best-box" class="hidden text-right px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-amber-500/30">
+          <div class="text-[9px] font-mono-tech uppercase text-slate-400">Record</div>
+          <div id="start-best-val" class="font-mono-tech text-xs font-extrabold text-amber-300">S1 · 0 PT</div>
+        </div>
+      </div>
+
+      <p class="text-sm text-slate-300 leading-relaxed mb-4">
+        Qui le mine non si evitano fino all'ultima cella: <strong class="text-amber-300">si deducono, si cablano e si fanno saltare in catena</strong> per sfondare la Quota Demolizione e costruire combo devastanti.
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-5">
+        <div class="p-3 rounded-2xl bg-slate-900/90 border border-slate-800">
+          <div class="font-display font-bold text-xs text-white mb-1 flex items-center gap-1.5">
+            <span class="text-amber-400">01</span> DEDUCI
+          </div>
+          <p class="text-[11px] text-slate-400 leading-snug">Scava per leggere i numeri. Il primo clic apre sempre un varco sicuro.</p>
+        </div>
+        <div class="p-3 rounded-2xl bg-slate-900/90 border border-slate-800">
+          <div class="font-display font-bold text-xs text-cyan-300 mb-1 flex items-center gap-1.5">
+            <span class="text-cyan-400">02</span> CABLA
+          </div>
+          <p class="text-[11px] text-slate-400 leading-snug">Piazza C4, Ponti Arco, Croci e Amplificatori ×2 sulle mine (e sugli Hotspot ⬡).</p>
+        </div>
+        <div class="p-3 rounded-2xl bg-slate-900/90 border border-slate-800">
+          <div class="font-display font-bold text-xs text-rose-400 mb-1 flex items-center gap-1.5">
+            <span class="text-rose-400">03</span> DETONA
+          </div>
+          <p class="text-[11px] text-slate-400 leading-snug">Innesca reazioni a catena, supera i 6 Settori e potenzia la build in Officina!</p>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-2.5">
+        <button id="btn-start-tutorial" class="flex-1 py-3.5 px-4 rounded-2xl font-display font-bold text-sm tracking-wider text-cyan-100 bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-400/55 shadow-lg shadow-cyan-950/50 transition active:scale-[0.98]">
+          🎓 TUTORIAL (30s)
+        </button>
+        <button id="btn-start-game" class="flex-1 py-3.5 px-4 rounded-2xl font-display font-bold text-sm tracking-wider text-slate-950 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 hover:brightness-110 shadow-lg shadow-amber-600/35 transition active:scale-[0.98]">
+          AVVIA MISSIONE →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HELP MODAL -->
+  <div id="modal-help" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="tac-panel animate-pop max-w-lg w-full rounded-3xl p-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-display font-bold text-lg text-white">Manuale Operativo</h3>
+        <button id="btn-close-help" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold">✕</button>
+      </div>
+      <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+          <strong class="text-amber-300 block mb-1">Regola d'Oro & Hotspot ⬡</strong>
+          Le mine sono la tua munizione! Cablare una <strong>vera mina</strong> la fa detonare in catena. Cablare una <strong>cella vuota</strong> infligge <strong>1 danno allo Scudo</strong>. Le celle col bordo dorato <strong>⬡ (Hotspot)</strong> raddoppiano (×2) il valore della mina e danno +25 ₡ se fatte saltare!
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <strong class="text-cyan-300 block">Moduli Esplosivi & Strumenti</strong>
+          <p>• <strong>Nota (⚑):</strong> Segnalino gratuito per pianificare senza spendere cariche. Vale anche per lo scavo rapido sui numeri!</p>
+          <p>• <strong>C4 Base (60 pt):</strong> +15 pt per ogni numero rivelato adiacente.</p>
+          <p>• <strong>Ponte Arco (80 pt, +0.5×):</strong> Lancia un arco elettrico verso altre mine cablate sulla stessa riga o colonna, innescando qualsiasi mina nel mezzo!</p>
+          <p>• <strong>Carica a Croce (90 pt):</strong> Esplode per 2 celle nelle 4 direzioni cardinali, innescando mine nascoste e rompendo placche corazzate.</p>
+          <p>• <strong>Amplificatore (50 pt, +1.0×):</strong> Raddoppia (×2) il punteggio di tutte le esplosioni nella sua area 3×3!</p>
+          <p>• <strong>Sonar:</strong> Scansiona un'area 3×3 ed evidenzia in verde una mina sicura nascosta.</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+          <strong class="text-emerald-300 block mb-1">Controlli Rapidi</strong>
+          Desktop: <strong>Tasto Destro</strong> per cablare/rimuovere rapidamente (o piazzare una Nota se hai scelto Nota). Tasti: <code>Q</code> Scava · <code>F</code> Nota · <code>1-4</code> Moduli · <code>5</code> Sonar · <code>Spazio</code> Detona.
+        </div>
+        <button id="btn-replay-tutorial" class="w-full py-2.5 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-200 font-display font-bold text-xs tracking-wider transition">
+          🎓 RIGIOCA TUTORIAL INTERATTIVO
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OFFICINA TATTICA (SHOP & RELIC DRAFT) MODAL -->
+  <div id="modal-shop" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+    <div class="tac-panel animate-pop max-w-2xl w-full rounded-3xl p-4 sm:p-6 max-h-[92vh] overflow-y-auto border border-emerald-500/35">
+      <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800">
+        <div>
+          <span class="text-[11px] font-mono-tech uppercase tracking-widest text-emerald-400 font-bold">Settore Demolito!</span>
+          <h2 class="font-display font-bold text-xl sm:text-2xl text-white">OFFICINA TATTICA</h2>
+        </div>
+        <div class="flex items-center gap-2.5">
+          <div class="px-3 py-1.5 rounded-xl bg-slate-900 border border-emerald-500/35 font-mono-tech text-sm font-bold text-emerald-300">
+            ₡ <span id="shop-credits">0</span>
+          </div>
+          <div class="px-3 py-1.5 rounded-xl bg-slate-900 border border-cyan-500/35 font-mono-tech text-sm font-bold text-cyan-200">
+            🛡️ <span id="shop-shields">3/3</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary bonus banner -->
+      <div id="shop-bonus-summary" class="my-3 px-3 py-2 rounded-xl bg-emerald-950/40 border border-emerald-500/25 text-xs font-mono-tech text-emerald-200 flex flex-wrap justify-between gap-2">
+        <span>Bonus Completamento</span>
+      </div>
+
+      <!-- STEP 1: FREE RELIC DRAFT -->
+      <div class="mb-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <h3 class="font-display font-bold text-sm uppercase tracking-wider text-amber-300">1. Scegli 1 Reliquia Gratuita</h3>
+          <div class="flex items-center gap-3">
+            <button id="btn-reroll-relics" class="text-[11px] font-mono-tech px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-cyan-500/40 text-cyan-300 transition">
+              ↻ Reroll (30 ₡)
+            </button>
+            <button id="btn-skip-relic" class="text-[11px] font-mono-tech text-slate-400 hover:text-emerald-300 underline">Salta (+60 ₡)</button>
+          </div>
+        </div>
+        <div id="shop-relic-choices" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+
+      <!-- STEP 2: UPGRADE SUPPLY BAY -->
+      <div class="mb-5">
+        <h3 class="font-display font-bold text-sm uppercase tracking-wider text-cyan-300 mb-2">2. Rifornimento & Potenziamenti (₡)</h3>
+        <div id="shop-upgrades-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+
+      <button id="btn-next-sector" class="w-full py-3.5 px-6 rounded-2xl font-display font-bold text-base tracking-wider text-slate-950 bg-gradient-to-r from-emerald-400 to-cyan-400 hover:brightness-110 shadow-lg shadow-cyan-500/25 transition active:scale-[0.98]">
+        PROSSIMO SETTORE →
+      </button>
+    </div>
+  </div>
+
+  <!-- VICTORY MODAL (After beating Sector 6 Boss: Nucleo Omega!) -->
+  <div id="modal-victory" class="hidden fixed inset-0 z-50 bg-slate-950/92 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="tac-panel animate-pop max-w-md w-full rounded-3xl p-6 text-center border border-amber-400/50 shadow-2xl shadow-amber-900/30">
+      <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-3xl shadow-lg shadow-amber-500/30">
+        🏆
+      </div>
+      <span class="font-mono-tech text-[11px] uppercase tracking-widest text-amber-300 font-bold">Nucleo Omega Demolito</span>
+      <h2 class="font-display font-bold text-2xl text-white mt-0.5 mb-2">MISSIONE COMPIUTA!</h2>
+      <p class="text-xs text-slate-300 mb-4 leading-relaxed">
+        Hai completato tutti i 6 Settori della campagna di demolizione! Puoi proseguire nella <strong>Modalità Infinita</strong> con la tua build attuale o iniziare una nuova run.
+      </p>
+
+      <div class="grid grid-cols-2 gap-2.5 mb-5 text-left">
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-[10px] text-slate-500 uppercase font-bold">Punteggio Run</div>
+          <div id="vic-total-score" class="font-mono-tech text-lg font-extrabold text-amber-400">0</div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-[10px] text-slate-500 uppercase font-bold">Catena Massima</div>
+          <div id="vic-max-chain" class="font-mono-tech text-lg font-extrabold text-purple-400">0</div>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <button id="btn-endless" class="w-full py-3.5 px-6 rounded-2xl font-display font-bold text-sm tracking-wider text-slate-950 bg-gradient-to-r from-emerald-400 to-cyan-400 hover:brightness-110 transition">
+          CONTINUA IN MODALITÀ INFINITA →
+        </button>
+        <button id="btn-vic-restart" class="w-full py-2.5 px-6 rounded-2xl font-display font-bold text-xs tracking-wider text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 transition">
+          NUOVA RUN ↻
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME OVER MODAL -->
+  <div id="modal-gameover" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="tac-panel animate-pop max-w-md w-full rounded-3xl p-6 text-center border border-rose-500/45">
+      <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-rose-500/15 border border-rose-500/45 flex items-center justify-center text-3xl">
+        💥
+      </div>
+      <h2 class="font-display font-bold text-2xl text-rose-400 mb-1">MISSIONE FALLITA</h2>
+      <p id="gameover-reason" class="text-xs text-slate-400 mb-4">Scudi esauriti durante la demolizione.</p>
+
+      <div class="grid grid-cols-2 gap-2.5 mb-5 text-left">
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-[10px] text-slate-500 uppercase font-bold">Settore Raggiunto</div>
+          <div id="go-sector" class="font-mono-tech text-lg font-extrabold text-white">1</div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-[10px] text-slate-500 uppercase font-bold">Punteggio Totale</div>
+          <div id="go-total-score" class="font-mono-tech text-lg font-extrabold text-amber-400">0</div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-[10px] text-slate-500 uppercase font-bold">Mine Detonate</div>
+          <div id="go-mines" class="font-mono-tech text-lg font-extrabold text-rose-400">0</div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-[10px] text-slate-500 uppercase font-bold">Catena Massima</div>
+          <div id="go-max-chain" class="font-mono-tech text-lg font-extrabold text-purple-400">0</div>
+        </div>
+      </div>
+
+      <button id="btn-restart" class="w-full py-3.5 px-6 rounded-2xl font-display font-bold text-base tracking-wider text-slate-950 bg-gradient-to-r from-amber-400 to-orange-500 hover:brightness-110 transition active:scale-[0.98]">
+        NUOVA RUN ↻
+      </button>
+    </div>
+  </div>
+
+  <!-- RELIC TOOLTIP POPOVER -->
+  <div id="relic-tooltip" class="hidden fixed z-50 max-w-xs p-3 rounded-xl bg-slate-900/95 border border-amber-400/45 shadow-2xl pointer-events-none text-xs">
+    <div id="rt-name" class="font-display font-bold text-amber-300 mb-0.5"></div>
+    <div id="rt-desc" class="text-slate-300 leading-snug"></div>
+  </div>
+
+  <script>
+    /**
+     * ============================================================================
+     * BLASTWIRE 2.0 // TACTICAL DEMOLITION ROGUELITE
+     * Architecture:
+     * 1. SVG Vector Asset Bank (crisp inline icons for board tiles)
+     * 2. Procedural Audio Engine (Tone.js layered blasts, noise crunch, chimes)
+     * 3. Game Data (6 Campaign Sectors + Endless, Tool Infos, 15 Synergistic Relics)
+     * 4. Canvas FX Engine (Hover Ghosts, Live Lasers, Sparks, Lightning, Shockwaves)
+     * 5. Core Minesweeper + Demolition + Interactive Tutorial State Machine
+     * 6. Officina Tattica (Shop, Reroll, Relic Draft) & UI Renderer
+     * ============================================================================
+     */
+
+    // =========================================================================
+    // 1. VECTOR SVG ICON BANK FOR BOARD CELLS
+    // =========================================================================
+    const CELL_SVGS = {
+      c4: `<svg class="w-[62%] h-[62%] text-amber-400 drop-shadow-[0_0_6px_rgba(245,158,11,0.7)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="7" width="16" height="12" rx="2.5" fill="currentColor" fill-opacity="0.28"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/><circle cx="12" cy="13" r="2.5" fill="#fef3c7"/></svg>`,
+      arc: `<svg class="w-[62%] h-[62%] text-cyan-300 drop-shadow-[0_0_7px_rgba(6,182,212,0.85)]" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h6l-1 8 11-12h-6l-1-8z"/></svg>`,
+      cross: `<svg class="w-[60%] h-[60%] text-rose-400 drop-shadow-[0_0_7px_rgba(239,68,68,0.85)]" viewBox="0 0 24 24" fill="currentColor"><path d="M10 2.5h4v7.5h7.5v4H14v7.5h-4V14H2.5v-4H10V2.5z"/></svg>`,
+      amp: `<svg class="w-[62%] h-[62%] text-purple-300 drop-shadow-[0_0_8px_rgba(168,85,247,0.9)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><polygon points="12 2 22 12 12 22 2 12 12 2" fill="currentColor" fill-opacity="0.28"/><circle cx="12" cy="12" r="3.2" fill="#f3e8ff"/></svg>`,
+      pin: `<svg class="w-[54%] h-[54%] text-amber-300 drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3v18h2.2v-7h9.3l-2.2-4 2.2-4H8.2V3H6z"/></svg>`,
+      sonar: `<svg class="w-[62%] h-[62%] text-emerald-300 drop-shadow-[0_0_8px_rgba(16,185,129,0.9)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3" fill="currentColor"/><circle cx="12" cy="12" r="8" stroke-dasharray="3 2"/></svg>`,
+      armor: `<svg class="w-[50%] h-[50%] text-amber-500/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 12h16M12 4v16"/></svg>`
+    };
+
+    // =========================================================================
+    // 2. LAYERED PROCEDURAL AUDIO ENGINE (Tone.js)
+    // =========================================================================
+    const SFX = {
+      ready: false,
+      muted: false,
+      clickSynth: null,
+      blastSynth: null,
+      crunchNoise: null,
+      metalSynth: null,
+      chordSynth: null,
+
+      init() {
+        if (this.ready) return;
+        try {
+          if (typeof Tone === 'undefined') return;
+          Tone.start();
+
+          this.clickSynth = new Tone.Synth({
+            oscillator: { type: 'triangle' },
+            envelope: { attack: 0.003, decay: 0.055, sustain: 0, release: 0.04 }
+          }).toDestination();
+          this.clickSynth.volume.value = -13;
+
+          this.blastSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.09,
+            octaves: 5.5,
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.004, decay: 0.36, sustain: 0.02, release: 0.28 }
+          }).toDestination();
+          this.blastSynth.volume.value = -5;
+
+          const noiseFilter = new Tone.Filter(950, 'bandpass').toDestination();
+          this.crunchNoise = new Tone.NoiseSynth({
+            noise: { type: 'brown' },
+            envelope: { attack: 0.005, decay: 0.16, sustain: 0, release: 0.08 }
+          }).connect(noiseFilter);
+          this.crunchNoise.volume.value = -10;
+
+          this.metalSynth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: 'sawtooth' },
+            envelope: { attack: 0.004, decay: 0.13, sustain: 0.03, release: 0.11 }
+          }).toDestination();
+          this.metalSynth.volume.value = -16;
+
+          this.chordSynth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.015, decay: 0.22, sustain: 0.18, release: 0.55 }
+          }).toDestination();
+          this.chordSynth.volume.value = -10;
+
+          this.ready = true;
+        } catch (err) {
+          console.warn('Audio init fallback:', err);
+        }
+      },
+
+      playReveal(cascadeSize = 1) {
+        if (this.muted || !this.ready) return;
+        try {
+          const baseFreq = cascadeSize > 3 ? 540 : 390;
+          this.clickSynth.triggerAttackRelease(baseFreq, '32n');
+          if (cascadeSize > 4) {
+            setTimeout(() => {
+              if (!this.muted && this.ready) this.clickSynth.triggerAttackRelease(720, '32n');
+            }, 50);
+          }
+        } catch (e) {}
+      },
+
+      playWire(type) {
+        if (this.muted || !this.ready) return;
+        try {
+          const notes = { c4: 'C5', arc: 'E5', cross: 'G5', amp: 'B5', pin: 'D4', unwire: 'A3', buy: 'F5' };
+          this.clickSynth.triggerAttackRelease(notes[type] || 'D5', '16n');
+        } catch (e) {}
+      },
+
+      playCrystal() {
+        if (this.muted || !this.ready) return;
+        try {
+          this.chordSynth.triggerAttackRelease(['A5', 'E6'], '16n');
+        } catch (e) {}
+      },
+
+      playSonar() {
+        if (this.muted || !this.ready) return;
+        try {
+          this.chordSynth.triggerAttackRelease(['G5', 'D6'], '8n');
+        } catch (e) {}
+      },
+
+      playBlast(chainIdx = 0) {
+        if (this.muted || !this.ready) return;
+        try {
+          const pitch = Math.min(190, 62 + chainIdx * 13);
+          this.blastSynth.triggerAttackRelease(pitch, '8n');
+          this.crunchNoise.triggerAttackRelease('16n');
+          const scale = ['C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5', 'C6'];
+          const n = scale[Math.min(scale.length - 1, chainIdx)];
+          this.metalSynth.triggerAttackRelease([n], '16n');
+        } catch (e) {}
+      },
+
+      playArc() {
+        if (this.muted || !this.ready) return;
+        try {
+          this.metalSynth.triggerAttackRelease(['E5', 'B5', 'E6'], '16n');
+        } catch (e) {}
+      },
+
+      playDud() {
+        if (this.muted || !this.ready) return;
+        try {
+          this.metalSynth.triggerAttackRelease(['Eb2', 'D2'], '8n');
+        } catch (e) {}
+      },
+
+      playWin() {
+        if (this.muted || !this.ready) return;
+        try {
+          const now = Tone.now();
+          this.chordSynth.triggerAttackRelease(['C4', 'E4', 'G4'], '8n', now);
+          this.chordSynth.triggerAttackRelease(['D4', 'F#4', 'A4'], '8n', now + 0.13);
+          this.chordSynth.triggerAttackRelease(['E4', 'G4', 'B4', 'E5'], '4n', now + 0.26);
+        } catch (e) {}
+      },
+
+      playFail() {
+        if (this.muted || !this.ready) return;
+        try {
+          const now = Tone.now();
+          this.chordSynth.triggerAttackRelease(['C3', 'Eb3', 'G3'], '4n', now);
+          this.chordSynth.triggerAttackRelease(['B2', 'D3', 'F3'], '2n', now + 0.22);
+        } catch (e) {}
+      }
+    };
+
+    // =========================================================================
+    // 3. GAME DATA: SECTORS, TOOLS & 15 SYNERGISTIC RELICS
+    // =========================================================================
+    const TOOL_INFO = {
+      dig: {
+        name: 'Scava',
+        desc: '<strong class="text-white">Scava:</strong> Rivela celle sicure (1 Mossa). Clicca un numero già circondato dal giusto numero di mine cablate o segnate per scavare i vicini in un colpo!'
+      },
+      pin: {
+        name: 'Nota Tattica',
+        desc: '<strong class="text-amber-200">Nota (Gratis):</strong> Segna le mine sospette senza consumare cariche esplosive. Conta anche per lo scavo rapido cliccando i numeri!'
+      },
+      c4: {
+        name: 'C4 Base',
+        desc: '<strong class="text-amber-300">C4 Base (60 pt):</strong> Carica affidabile. Ottiene <strong class="text-amber-200">+15 pt</strong> per ogni numero scoperto adiacente alla mina.'
+      },
+      arc: {
+        name: 'Ponte Arco',
+        desc: '<strong class="text-cyan-300">Ponte Arco (80 pt, +0.5×):</strong> Lancia un arco elettrico verso qualsiasi altra mina cablata sulla stessa riga o colonna, innescando tutto ciò che sta in mezzo!'
+      },
+      cross: {
+        name: 'Carica a Croce',
+        desc: '<strong class="text-rose-300">Carica a Croce (90 pt):</strong> Esplode per 2 celle nelle 4 direzioni cardinali, innescando mine nascoste e frantumando placche corazzate.'
+      },
+      amp: {
+        name: 'Amplificatore',
+        desc: '<strong class="text-purple-300">Amplificatore (50 pt, +1.0×):</strong> Raddoppia (<strong class="text-purple-200">×2</strong>) il punteggio di tutte le esplosioni nella sua area 3×3!'
+      },
+      sonar: {
+        name: 'Sonar Tattico',
+        desc: '<strong class="text-emerald-300">Sonar 3×3:</strong> Clicca qualsiasi punto della griglia per scansionare un’area 3×3 ed evidenziare 1 mina sicura. Addio bivi 50/50!'
+      }
+    };
+
+    const RELIC_CATALOG = [
+      {
+        id: 'resonance_3',
+        name: 'Risonanza del 3',
+        icon: '🔺',
+        rarity: 'Raro',
+        color: 'text-cyan-300 border-cyan-500/45',
+        desc: 'Ogni mina detonata adiacente a un numero 3 o superiore vale ×2 punti.'
+      },
+      {
+        id: 'domino',
+        name: 'Effetto Domino',
+        icon: '🁢',
+        rarity: 'Epico',
+        color: 'text-purple-300 border-purple-500/45',
+        desc: 'Le mine secondarie colpite da un’esplosione valgono +120 pt base e propagano l’onda alle 4 celle adiacenti!'
+      },
+      {
+        id: 'arc_diag',
+        name: 'Condensatore d’Arco',
+        icon: '💠',
+        rarity: 'Raro',
+        color: 'text-cyan-300 border-cyan-500/45',
+        desc: 'I Ponti Arco si collegano anche in diagonale e danno +1.0× al moltiplicatore.'
+      },
+      {
+        id: 'border_hunter',
+        name: 'Cercatore di Bordi',
+        icon: '📐',
+        rarity: 'Comune',
+        color: 'text-amber-300 border-amber-500/45',
+        desc: 'Le mine detonate sul bordo esterno della griglia valgono ×2 punti e restituiscono +1 Mossa.'
+      },
+      {
+        id: 'kinetic_shield',
+        name: 'Scudo Cinetico',
+        icon: '🔋',
+        rarity: 'Comune',
+        color: 'text-emerald-300 border-emerald-500/45',
+        desc: 'Ogni detonazione con almeno 3 mine in catena rigenera +1 Scudo e genera +25 ₡.'
+      },
+      {
+        id: 'surgical',
+        name: 'Protocollo Chirurgico',
+        icon: '🔬',
+        rarity: 'Raro',
+        color: 'text-cyan-300 border-cyan-500/45',
+        desc: 'Le cascate di 0 (5+ celle) conferiscono +1 carica C4 e +0.25× alla prossima detonazione.'
+      },
+      {
+        id: 'gold_mine',
+        name: 'Mina Dorata',
+        icon: '🪙',
+        rarity: 'Comune',
+        color: 'text-amber-300 border-amber-500/45',
+        desc: 'Ogni mina distrutta durante una detonazione genera +14 ₡ extra.'
+      },
+      {
+        id: 'thermal_amp',
+        name: 'Sovraccarico 5×5',
+        icon: '🟣',
+        rarity: 'Epico',
+        color: 'text-purple-300 border-purple-500/45',
+        desc: 'Gli Amplificatori estendono il loro campo ×2 a un’area 5×5!'
+      },
+      {
+        id: 'cross_reach',
+        name: 'Raffica a Croce',
+        icon: '✚',
+        rarity: 'Raro',
+        color: 'text-rose-300 border-rose-500/45',
+        desc: 'Le Cariche a Croce esplodono fino a 4 celle di distanza in ogni direzione invece di 2.'
+      },
+      {
+        id: 'auto_wire',
+        name: 'Salva-Innesco',
+        icon: '🛡️',
+        rarity: 'Epico',
+        color: 'text-purple-300 border-purple-500/45',
+        desc: 'Una volta per settore, se scavi una mina per errore la cabla automaticamente in C4 senza subire danni!'
+      },
+      {
+        id: 'unstable_core',
+        name: 'Nucleo Instabile',
+        icon: '☢️',
+        rarity: 'Epico',
+        color: 'text-purple-300 border-purple-500/45',
+        desc: 'Ogni detonazione parte con +0.35× extra per ogni mina cablata simultaneamente.'
+      },
+      {
+        id: 'fast_drill',
+        name: 'Trivella Rapida',
+        icon: '⚙️',
+        rarity: 'Comune',
+        color: 'text-amber-300 border-amber-500/45',
+        desc: 'Inizi ogni settore con +5 Mosse extra e +1 carica Sonar.'
+      },
+      {
+        id: 'seismic_wake',
+        name: 'Scia Sismica',
+        icon: '🌊',
+        rarity: 'Raro',
+        color: 'text-cyan-300 border-cyan-500/45',
+        desc: 'Ogni mina detonata scopre automaticamente tutte le celle sicure nella sua area 3×3 per darti informazioni gratis!'
+      },
+      {
+        id: 'hotspot_master',
+        name: 'Risonatore Sismico',
+        icon: '⬡',
+        rarity: 'Raro',
+        color: 'text-amber-300 border-amber-500/45',
+        desc: 'Le mine detonate su un Hotspot ⬡ valgono ×3 invece di ×2 e ricaricano +1 Ponte Arco!'
+      },
+      {
+        id: 'armor_piercer',
+        name: 'Perforatore d’Arco',
+        icon: '⚡',
+        rarity: 'Comune',
+        color: 'text-emerald-300 border-emerald-500/45',
+        desc: 'Ogni placca corazzata frantumata da un’esplosione vale +90 PT e +20 ₡.'
+      }
+    ];
+
+    function getSectorConfig(sectorNum) {
+      const configs = [
+        { rows: 8, cols: 8, mines: 12, target: 350, moves: 22, hotspots: 2, anomaly: 'none', anomalyText: 'Settore Standard · Cerca gli Hotspot ⬡ (×2 pt)' },
+        { rows: 9, cols: 9, mines: 16, target: 700, moves: 26, hotspots: 3, anomaly: 'crystals', anomalyText: 'Anomalia: Vena Cristallina (◆ = +40 ₡)' },
+        { rows: 9, cols: 9, mines: 20, target: 1200, moves: 28, hotspots: 3, anomaly: 'dense', anomalyText: 'BOSS S3: Nucleo Denso (Catene +40% pt!)' },
+        { rows: 10, cols: 10, mines: 23, target: 1750, moves: 31, hotspots: 3, anomaly: 'armor', anomalyText: 'Anomalia: Placche Corazzate (rompibili coi blast)' },
+        { rows: 10, cols: 10, mines: 26, target: 2450, moves: 34, hotspots: 4, anomaly: 'scramble', anomalyText: 'Anomalia: Tempesta EMP (? si decripta coi blast)' },
+        { rows: 11, cols: 11, mines: 32, target: 3500, moves: 38, hotspots: 4, anomaly: 'omega', anomalyText: 'BOSS FINALE S6: Nucleo Omega (Tutti i pericoli · +40%)' }
+      ];
+      if (sectorNum <= configs.length) return configs[sectorNum - 1];
+      const extra = sectorNum - configs.length;
+      return {
+        rows: 11,
+        cols: 11,
+        mines: Math.min(44, 32 + extra * 2),
+        target: 3500 + extra * 1300,
+        moves: 38 + extra * 2,
+        hotspots: 5,
+        anomaly: extra % 2 === 0 ? 'omega' : 'dense',
+        anomalyText: `MODALITÀ INFINITA S${sectorNum} · Alta Instabilità (+40% Catene)`
+      };
+    }
+
+    // Safe localStorage persistence for High Score
+    const Storage = {
+      key: 'blastwire_v2_records',
+      load() {
+        try {
+          const raw = localStorage.getItem(this.key);
+          return raw ? JSON.parse(raw) : { bestSector: 0, bestScore: 0 };
+        } catch (e) {
+          return { bestSector: 0, bestScore: 0 };
+        }
+      },
+      save(sector, score) {
+        try {
+          const prev = this.load();
+          const next = {
+            bestSector: Math.max(prev.bestSector || 0, sector),
+            bestScore: Math.max(prev.bestScore || 0, score)
+          };
+          localStorage.setItem(this.key, JSON.stringify(next));
+          return next;
+        } catch (e) {
+          return { bestSector: sector, bestScore: score };
+        }
+      }
+    };
+
+    // Helper for rounded rect compatibility
+    function drawRoundedRect(ctx, x, y, w, h, r) {
+      if (typeof ctx.roundRect === 'function') {
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, r);
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      }
+    }
+
+    // =========================================================================
+    // 4. CANVAS FX ENGINE (Ghost Hover, Live Lasers, Sparks, Arcs, Popups)
+    // =========================================================================
+    const FX = {
+      canvas: null,
+      ctx: null,
+      particles: [],
+      shockwaves: [],
+      beams: [],
+      popups: [],
+      running: false,
+      lastSparkTime: 0,
+
+      init() {
+        this.canvas = document.getElementById('fx-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        if (typeof ResizeObserver !== 'undefined') {
+          const ro = new ResizeObserver(() => this.resize());
+          ro.observe(document.getElementById('board-wrapper'));
+        }
+        if (!this.running) {
+          this.running = true;
+          requestAnimationFrame((ts) => this.loop(ts));
+        }
+      },
+
+      resize() {
+        if (!this.canvas) return;
+        const rect = this.canvas.parentElement.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        this.canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+        this.canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+        this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      },
+
+      getCellCenter(r, c) {
+        const el = document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+        if (!el || !this.canvas) return { x: 0, y: 0, size: 32 };
+        const cRect = this.canvas.getBoundingClientRect();
+        const eRect = el.getBoundingClientRect();
+        return {
+          x: eRect.left - cRect.left + eRect.width / 2,
+          y: eRect.top - cRect.top + eRect.height / 2,
+          size: eRect.width
+        };
+      },
+
+      spawnExplosion(r, c, color = '#f59e0b', scale = 1) {
+        const { x, y, size } = this.getCellCenter(r, c);
+        // Primary shockwave
+        this.shockwaves.push({
+          x, y,
+          radius: size * 0.2,
+          maxRadius: size * (2.0 * scale),
+          alpha: 0.95,
+          lineWidth: 3.5,
+          color
+        });
+        // Inner white-hot flash ring
+        this.shockwaves.push({
+          x, y,
+          radius: size * 0.1,
+          maxRadius: size * (1.1 * scale),
+          alpha: 0.85,
+          lineWidth: 2,
+          color: '#ffffff'
+        });
+
+        const count = Math.floor(18 * scale);
+        for (let i = 0; i < count; i++) {
+          const ang = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.55;
+          const spd = (1.8 + Math.random() * 4.4) * scale;
+          this.particles.push({
+            x, y,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd,
+            life: 1,
+            decay: 0.024 + Math.random() * 0.025,
+            size: 2.2 + Math.random() * 4,
+            square: Math.random() > 0.5,
+            color: Math.random() > 0.3 ? color : '#fff7ed'
+          });
+        }
+      },
+
+      spawnAmbientSparks(wiredList) {
+        if (!wiredList.length) return;
+        const w = wiredList[Math.floor(Math.random() * wiredList.length)];
+        const { x, y, size } = this.getCellCenter(w.r, w.c);
+        const colors = { c4: '#fbbf24', arc: '#22d3ee', cross: '#f87171', amp: '#c084fc' };
+        this.particles.push({
+          x: x + (Math.random() - 0.5) * size * 0.55,
+          y: y + (Math.random() - 0.5) * size * 0.55,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: -0.6 - Math.random() * 0.8,
+          life: 0.85,
+          decay: 0.028,
+          size: 1.8 + Math.random() * 1.4,
+          square: false,
+          color: colors[w.wire] || '#fbbf24'
+        });
+      },
+
+      spawnBeam(r1, c1, r2, c2, color = '#06b6d4', jagged = true) {
+        const p1 = this.getCellCenter(r1, c1);
+        const p2 = this.getCellCenter(r2, c2);
+        this.beams.push({
+          x1: p1.x, y1: p1.y,
+          x2: p2.x, y2: p2.y,
+          color,
+          jagged,
+          life: 1,
+          decay: 0.028
+        });
+      },
+
+      spawnPopup(r, c, text, color = '#fbbf24', big = false) {
+        const { x, y } = this.getCellCenter(r, c);
+        this.popups.push({
+          x: x + (Math.random() - 0.5) * 10,
+          y: y - 6,
+          vy: -1.05,
+          text,
+          color,
+          big,
+          life: 1,
+          decay: 0.016
+        });
+      },
+
+      flashBoard(color = 'rgba(251, 191, 36, 0.22)') {
+        const el = document.getElementById('board-flash');
+        if (!el) return;
+        el.style.background = color;
+        el.style.opacity = '1';
+        setTimeout(() => { el.style.opacity = '0'; }, 130);
+      },
+
+      shakeBoard(intensity = 6) {
+        const el = document.getElementById('board-wrapper');
+        if (!el) return;
+        const dx = (Math.random() - 0.5) * intensity * 2;
+        const dy = (Math.random() - 0.5) * intensity * 2;
+        el.style.transform = `translate(${dx}px, ${dy}px)`;
+        setTimeout(() => { el.style.transform = 'translate(0, 0)'; }, 65);
+      },
+
+      drawTacticalPreviews(ctx) {
+        if (!Game.board.length || Game.isDetonating) return;
+        const wired = Game.getWiredCells();
+        const t = performance.now() / 1000;
+
+        ctx.save();
+
+        // === A. EXISTING WIRED NETWORK PREVIEWS ===
+        const ampRadius = Game.hasRelic('thermal_amp') ? 2 : 1;
+        for (const w of wired) {
+          if (w.wire === 'amp') {
+            const center = this.getCellCenter(w.r, w.c);
+            const span = center.size * (ampRadius * 2 + 1) + ampRadius * 10;
+            ctx.strokeStyle = 'rgba(168, 85, 247, 0.65)';
+            ctx.fillStyle = 'rgba(168, 85, 247, 0.09)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 4]);
+            ctx.lineDashOffset = -t * 18;
+            drawRoundedRect(ctx, center.x - span / 2, center.y - span / 2, span, span, 11);
+            ctx.fill();
+            ctx.stroke();
+          }
+        }
+
+        const crossRange = Game.hasRelic('cross_reach') ? 4 : 2;
+        for (const w of wired) {
+          if (w.wire === 'cross') {
+            const p0 = this.getCellCenter(w.r, w.c);
+            const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+            ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+            ctx.lineWidth = 2.4;
+            ctx.setLineDash([5, 4]);
+            ctx.lineDashOffset = -t * 20;
+            for (const [dr, dc] of dirs) {
+              const er = Math.max(0, Math.min(Game.rows - 1, w.r + dr * crossRange));
+              const ec = Math.max(0, Math.min(Game.cols - 1, w.c + dc * crossRange));
+              const pe = this.getCellCenter(er, ec);
+              ctx.beginPath();
+              ctx.moveTo(p0.x, p0.y);
+              ctx.lineTo(pe.x, pe.y);
+              ctx.stroke();
+            }
+          }
+        }
+
+        const pairs = Game.getArcPairs(wired);
+        for (const [a, b] of pairs) {
+          const pa = this.getCellCenter(a.r, a.c);
+          const pb = this.getCellCenter(b.r, b.c);
+          ctx.strokeStyle = 'rgba(34, 211, 238, 0.88)';
+          ctx.shadowColor = '#06b6d4';
+          ctx.shadowBlur = 8;
+          ctx.lineWidth = 2.6;
+          ctx.setLineDash([7, 4]);
+          ctx.lineDashOffset = -t * 32;
+          ctx.beginPath();
+          ctx.moveTo(pa.x, pa.y);
+          ctx.lineTo(pb.x, pb.y);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        }
+
+        // === B. GHOST HOVER PROJECTION (Into the Breach-style!) ===
+        const hov = Game.hoveredCell;
+        if (hov && Game.firstClickDone) {
+          const cell = Game.board[hov.r]?.[hov.c];
+          if (cell && !cell.revealed && !cell.armored) {
+            const tool = Game.activeTool;
+            if (tool === 'sonar' && Game.charges.sonar > 0) {
+              const center = this.getCellCenter(hov.r, hov.c);
+              const span = center.size * 3 + 10;
+              ctx.strokeStyle = 'rgba(16, 185, 129, 0.75)';
+              ctx.fillStyle = 'rgba(16, 185, 129, 0.10)';
+              ctx.lineWidth = 2;
+              ctx.setLineDash([4, 4]);
+              drawRoundedRect(ctx, center.x - span / 2, center.y - span / 2, span, span, 10);
+              ctx.fill();
+              ctx.stroke();
+            } else if (tool === 'amp' && !cell.wire && Game.charges.amp > 0) {
+              const center = this.getCellCenter(hov.r, hov.c);
+              const span = center.size * (ampRadius * 2 + 1) + ampRadius * 10;
+              ctx.strokeStyle = 'rgba(192, 132, 252, 0.45)';
+              ctx.fillStyle = 'rgba(168, 85, 247, 0.06)';
+              ctx.lineWidth = 1.6;
+              ctx.setLineDash([3, 4]);
+              drawRoundedRect(ctx, center.x - span / 2, center.y - span / 2, span, span, 10);
+              ctx.fill();
+              ctx.stroke();
+            } else if (tool === 'cross' && !cell.wire && Game.charges.cross > 0) {
+              const p0 = this.getCellCenter(hov.r, hov.c);
+              const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+              ctx.strokeStyle = 'rgba(248, 113, 113, 0.45)';
+              ctx.lineWidth = 2;
+              ctx.setLineDash([3, 4]);
+              for (const [dr, dc] of dirs) {
+                const er = Math.max(0, Math.min(Game.rows - 1, hov.r + dr * crossRange));
+                const ec = Math.max(0, Math.min(Game.cols - 1, hov.c + dc * crossRange));
+                const pe = this.getCellCenter(er, ec);
+                ctx.beginPath();
+                ctx.moveTo(p0.x, p0.y);
+                ctx.lineTo(pe.x, pe.y);
+                ctx.stroke();
+              }
+            } else if (['c4', 'arc', 'cross', 'amp'].includes(tool) && !cell.wire && Game.charges[tool] > 0) {
+              // Show potential Arc links that would form if placing here!
+              const hypothetical = [...wired, { r: hov.r, c: hov.c, wire: tool }];
+              const newPairs = Game.getArcPairs(hypothetical).filter(
+                ([a, b]) => (a.r === hov.r && a.c === hov.c) || (b.r === hov.r && b.c === hov.c)
+              );
+              ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+              ctx.lineWidth = 2;
+              ctx.setLineDash([4, 5]);
+              for (const [a, b] of newPairs) {
+                const pa = this.getCellCenter(a.r, a.c);
+                const pb = this.getCellCenter(b.r, b.c);
+                ctx.beginPath();
+                ctx.moveTo(pa.x, pa.y);
+                ctx.lineTo(pb.x, pb.y);
+                ctx.stroke();
+              }
+            }
+          }
+        }
+
+        ctx.restore();
+      },
+
+      loop(ts = 0) {
+        const ctx = this.ctx;
+        if (ctx && this.canvas) {
+          const rect = this.canvas.getBoundingClientRect();
+          ctx.clearRect(0, 0, rect.width, rect.height);
+
+          // Subtle ambient sparks on wired tiles
+          if (ts - this.lastSparkTime > 170 && !Game.isDetonating) {
+            this.lastSparkTime = ts;
+            this.spawnAmbientSparks(Game.getWiredCells());
+          }
+
+          // Draw live tactical network previews & hover ghost
+          this.drawTacticalPreviews(ctx);
+
+          // Draw beams / double-core lightning
+          for (let i = this.beams.length - 1; i >= 0; i--) {
+            const b = this.beams[i];
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, b.life);
+
+            const pts = [{ x: b.x1, y: b.y1 }];
+            if (b.jagged) {
+              const steps = 8;
+              for (let s = 1; s < steps; s++) {
+                const f = s / steps;
+                pts.push({
+                  x: b.x1 + (b.x2 - b.x1) * f + (Math.random() - 0.5) * 14,
+                  y: b.y1 + (b.y2 - b.y1) * f + (Math.random() - 0.5) * 14
+                });
+              }
+            }
+            pts.push({ x: b.x2, y: b.y2 });
+
+            // Outer glow beam
+            ctx.strokeStyle = b.color;
+            ctx.shadowColor = b.color;
+            ctx.shadowBlur = 16;
+            ctx.lineWidth = b.jagged ? 5.5 : 8;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            pts.forEach((p, idx) => idx === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+            ctx.stroke();
+
+            // White-hot inner core
+            ctx.strokeStyle = '#ffffff';
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = b.jagged ? 2 : 3;
+            ctx.beginPath();
+            pts.forEach((p, idx) => idx === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+            ctx.stroke();
+
+            ctx.restore();
+            b.life -= b.decay;
+            if (b.life <= 0) this.beams.splice(i, 1);
+          }
+
+          // Draw shockwaves
+          for (let i = this.shockwaves.length - 1; i >= 0; i--) {
+            const s = this.shockwaves[i];
+            s.radius += (s.maxRadius - s.radius) * 0.22;
+            s.alpha -= 0.045;
+            if (s.alpha <= 0) {
+              this.shockwaves.splice(i, 1);
+              continue;
+            }
+            ctx.save();
+            ctx.globalAlpha = s.alpha;
+            ctx.strokeStyle = s.color;
+            ctx.lineWidth = s.lineWidth || 3;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          // Draw particles & debris
+          for (let i = this.particles.length - 1; i >= 0; i--) {
+            const p = this.particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vx *= 0.94;
+            p.vy *= 0.94;
+            p.life -= p.decay;
+            if (p.life <= 0) {
+              this.particles.splice(i, 1);
+              continue;
+            }
+            ctx.save();
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = p.color;
+            const sz = p.size * p.life;
+            if (p.square) {
+              ctx.fillRect(p.x - sz / 2, p.y - sz / 2, sz, sz);
+            } else {
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, sz, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+
+          // Draw floating score popups
+          for (let i = this.popups.length - 1; i >= 0; i--) {
+            const pop = this.popups[i];
+            pop.y += pop.vy;
+            pop.life -= pop.decay;
+            if (pop.life <= 0) {
+              this.popups.splice(i, 1);
+              continue;
+            }
+            ctx.save();
+            ctx.globalAlpha = Math.min(1, pop.life * 1.45);
+            ctx.font = `800 ${pop.big ? 17 : 13}px "JetBrains Mono", monospace`;
+            ctx.textAlign = 'center';
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = 'rgba(6, 9, 14, 0.92)';
+            ctx.strokeText(pop.text, pop.x, pop.y);
+            ctx.fillStyle = pop.color;
+            ctx.fillText(pop.text, pop.x, pop.y);
+            ctx.restore();
+          }
+        }
+        requestAnimationFrame((nextTs) => this.loop(nextTs));
+      }
+    };
+
+    // =========================================================================
+    // 5. CORE GAME STATE, INTERACTIVE TUTORIAL & DEMOLITION ENGINE
+    // =========================================================================
+    const Game = {
+      // Run-level persistent state
+      sector: 1,
+      shields: 3,
+      maxShields: 3,
+      credits: 0,
+      relics: [],
+      baseCharges: { c4: 6, arc: 3, cross: 2, amp: 2, sonar: 1 },
+      bonusMoves: 0,
+      victoryShown: false,
+
+      // Run statistics
+      totalScore: 0,
+      displayedScore: 0,
+      totalMinesDetonated: 0,
+      maxChain: 0,
+
+      // Sector-level state
+      rows: 8,
+      cols: 8,
+      minesTotal: 12,
+      sectorTarget: 350,
+      sectorScore: 0,
+      moves: 22,
+      anomaly: 'none',
+      charges: { c4: 6, arc: 3, cross: 2, amp: 2, sonar: 1 },
+      board: [],
+      firstClickDone: false,
+      isDetonating: false,
+      isGameOver: false,
+      activeTool: 'dig',
+      lastWireTool: 'c4',
+      wireOrderCounter: 0,
+      autoWireUsedThisSector: false,
+      surgicalBonusMult: 0,
+      relicDraftTaken: false,
+      hoveredCell: null,
+
+      // Interactive Tutorial state
+      tutorialMode: false,
+      tutorialStep: 0, // 1=dig(2,0), 2=wire(1,3) arc, 3=wire(3,3) amp, 4=detonate, 5=done
+
+      hasRelic(id) {
+        return this.relics.includes(id);
+      },
+
+      // =======================================================================
+      // INTERACTIVE 4-STEP PLAYABLE TUTORIAL
+      // =======================================================================
+      startTutorial() {
+        this.tutorialMode = true;
+        this.tutorialStep = 1;
+        this.isGameOver = false;
+        this.isDetonating = false;
+        this.sector = 0;
+        this.shields = 3;
+        this.maxShields = 3;
+        this.credits = 0;
+        this.relics = [];
+        this.rows = 5;
+        this.cols = 5;
+        this.minesTotal = 3;
+        this.sectorTarget = 400;
+        this.sectorScore = 0;
+        this.displayedScore = 0;
+        this.moves = 10;
+        this.anomaly = 'tutorial';
+        this.charges = { c4: 2, arc: 2, cross: 1, amp: 1, sonar: 1 };
+        this.firstClickDone = true; // Deterministic mines pre-placed!
+        this.wireOrderCounter = 0;
+        this.surgicalBonusMult = 0;
+
+        // Build deterministic 5x5 training board
+        this.board = [];
+        for (let r = 0; r < 5; r++) {
+          const row = [];
+          for (let c = 0; c < 5; c++) {
+            row.push({
+              r, c,
+              isMine: false,
+              revealed: false,
+              crater: false,
+              armored: false,
+              crystal: false,
+              hotspot: (r === 2 && c === 3), // Middle hidden chain mine is on a Hotspot!
+              scrambled: false,
+              sonarPing: false,
+              pinned: false,
+              wire: null,
+              wireOrder: 0,
+              adjMines: 0
+            });
+          }
+          this.board.push(row);
+        }
+        // Place 3 mines vertically on col 3 -> creates crystal-clear 1-2-3-2-1 pattern on col 2!
+        this.board[1][3].isMine = true;
+        this.board[2][3].isMine = true;
+        this.board[3][3].isMine = true;
+        this.recalculateCounts();
+
+        document.getElementById('modal-start').classList.add('hidden');
+        document.getElementById('modal-help').classList.add('hidden');
+        document.getElementById('tutorial-banner').classList.remove('hidden');
+        document.getElementById('btn-tut-finish').classList.add('hidden');
+        document.getElementById('btn-tut-skip').classList.remove('hidden');
+        document.getElementById('hud-anomaly-text').textContent = 'Simulazione Addestramento · 5×5';
+
+        this.setTool('dig');
+        this.updateTutorialUI();
+        this.renderBoard();
+        this.updateHUD();
+      },
+
+      exitTutorialToRealRun() {
+        this.tutorialMode = false;
+        this.tutorialStep = 0;
+        document.getElementById('tutorial-banner').classList.add('hidden');
+        this.clearTutorialHighlights();
+        this.startNewRun();
+      },
+
+      clearTutorialHighlights() {
+        document.querySelectorAll('.btn-tut-target').forEach(el => el.classList.remove('btn-tut-target'));
+      },
+
+      updateTutorialUI() {
+        this.clearTutorialHighlights();
+        if (!this.tutorialMode) return;
+
+        const badge = document.getElementById('tut-step-badge');
+        const title = document.getElementById('tut-title');
+        const desc = document.getElementById('tut-desc');
+        const finishBtn = document.getElementById('btn-tut-finish');
+        const skipBtn = document.getElementById('btn-tut-skip');
+
+        if (this.tutorialStep === 1) {
+          badge.textContent = 'STEP 1/4';
+          title.textContent = '1. Ricognizione Sicura';
+          desc.innerHTML = 'Clicca la <strong>cella blu lampeggiante</strong> per scavare un varco e scoprire i numeri.';
+        } else if (this.tutorialStep === 2) {
+          badge.textContent = 'STEP 2/4';
+          title.textContent = '2. Deduci e Cabla un Ponte Arco';
+          desc.innerHTML = 'Vedi la colonna <strong>1-2-3-2-1</strong>? Il 3 tocca 3 celle coperte: sono tutte mine! Cabla quella in alto con <strong>⚡ Ponte Arco</strong>.';
+          if (this.activeTool !== 'arc') {
+            document.querySelector('[data-tool="arc"]')?.classList.add('btn-tut-target');
+          }
+        } else if (this.tutorialStep === 3) {
+          badge.textContent = 'STEP 3/4';
+          title.textContent = '3. Chiudi il Circuito con l’Amplificatore ×2';
+          desc.innerHTML = 'Salta la mina centrale (⬡) e cabla quella in basso con <strong>◈ Amplifica</strong>! L’arco elettrico colpirà la mina in mezzo raddoppiata ×2!';
+          if (this.activeTool !== 'amp') {
+            document.querySelector('[data-tool="amp"]')?.classList.add('btn-tut-target');
+          }
+        } else if (this.tutorialStep === 4) {
+          badge.textContent = 'STEP 4/4';
+          title.textContent = '4. Innesca la Reazione a Catena!';
+          desc.innerHTML = 'Guarda il laser azzurro e l’aura viola ×2: ora premi <strong>☢ DETONA</strong> per far saltare tutte e 3 le mine in un solo colpo!';
+          document.getElementById('btn-detonate')?.classList.add('btn-tut-target');
+        } else if (this.tutorialStep === 5) {
+          badge.textContent = 'COMPLETATO!';
+          title.textContent = 'Addestramento Superato!';
+          desc.innerHTML = 'Hai innescato un Arco + Amplificatore + Catena Secondaria su Hotspot! Ora sei pronto per la missione vera.';
+          finishBtn.classList.remove('hidden');
+          skipBtn.classList.add('hidden');
+        }
+      },
+
+      // =======================================================================
+      // NORMAL RUN & SECTOR SETUP
+      // =======================================================================
+      startNewRun() {
+        this.tutorialMode = false;
+        this.tutorialStep = 0;
+        document.getElementById('tutorial-banner').classList.add('hidden');
+        this.clearTutorialHighlights();
+
+        this.sector = 1;
+        this.shields = 3;
+        this.maxShields = 3;
+        this.credits = 0;
+        this.relics = [];
+        this.baseCharges = { c4: 6, arc: 3, cross: 2, amp: 2, sonar: 1 };
+        this.bonusMoves = 0;
+        this.victoryShown = false;
+        this.totalScore = 0;
+        this.totalMinesDetonated = 0;
+        this.maxChain = 0;
+        this.isGameOver = false;
+        this.activeTool = 'dig';
+        this.lastWireTool = 'c4';
+        this.startSector(1);
+      },
+
+      startSector(sectorNum) {
+        this.sector = sectorNum;
+        const cfg = getSectorConfig(sectorNum);
+        this.rows = cfg.rows;
+        this.cols = cfg.cols;
+        this.minesTotal = cfg.mines;
+        this.sectorTarget = cfg.target;
+        this.sectorScore = 0;
+        this.displayedScore = 0;
+        this.anomaly = cfg.anomaly;
+        this.moves = cfg.moves + this.bonusMoves + (this.hasRelic('fast_drill') ? 5 : 0);
+        this.charges = {
+          c4: this.baseCharges.c4,
+          arc: this.baseCharges.arc,
+          cross: this.baseCharges.cross,
+          amp: this.baseCharges.amp,
+          sonar: this.baseCharges.sonar + (this.hasRelic('fast_drill') ? 1 : 0)
+        };
+        this.firstClickDone = false;
+        this.isDetonating = false;
+        this.wireOrderCounter = 0;
+        this.autoWireUsedThisSector = false;
+        this.surgicalBonusMult = 0;
+        this.hoveredCell = null;
+
+        this.board = [];
+        for (let r = 0; r < this.rows; r++) {
+          const row = [];
+          for (let c = 0; c < this.cols; c++) {
+            row.push({
+              r, c,
+              isMine: false,
+              revealed: false,
+              crater: false,
+              armored: false,
+              crystal: false,
+              hotspot: false,
+              scrambled: false,
+              sonarPing: false,
+              pinned: false,
+              wire: null,
+              wireOrder: 0,
+              adjMines: 0
+            });
+          }
+          this.board.push(row);
+        }
+
+        document.getElementById('hud-anomaly-text').textContent = cfg.anomalyText;
+        this.setTool('dig');
+        this.renderBoard();
+        this.updateHUD();
+        this.showToast(`Settore ${sectorNum} pronto. Clicca una cella per avviare la ricognizione.`);
+      },
+
+      populateMinesAndAnomalies(safeR, safeC) {
+        const cfg = getSectorConfig(this.sector);
+        const candidates = [];
+        for (let r = 0; r < this.rows; r++) {
+          for (let c = 0; c < this.cols; c++) {
+            if (Math.abs(r - safeR) <= 1 && Math.abs(c - safeC) <= 1) continue;
+            candidates.push(this.board[r][c]);
+          }
+        }
+        for (let i = candidates.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+        }
+
+        // Place mines
+        const mineCount = Math.min(this.minesTotal, candidates.length);
+        for (let i = 0; i < mineCount; i++) {
+          candidates[i].isMine = true;
+        }
+
+        // Place Seismic Hotspots (mix of mine & non-mine tiles so players must still deduce!)
+        const hsCount = cfg.hotspots || 2;
+        const hsPool = [...candidates];
+        for (let i = hsPool.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [hsPool[i], hsPool[j]] = [hsPool[j], hsPool[i]];
+        }
+        // Guarantee at least 1 hotspot is on a real mine so it feels rewarding
+        if (mineCount > 0) candidates[0].hotspot = true;
+        let hsPlaced = 1;
+        for (const tile of hsPool) {
+          if (hsPlaced >= hsCount) break;
+          if (!tile.hotspot) {
+            tile.hotspot = true;
+            hsPlaced++;
+          }
+        }
+
+        // Place Crystals
+        if (this.anomaly === 'crystals' || this.anomaly === 'omega' || this.anomaly === 'scramble') {
+          const crysCount = this.anomaly === 'omega' ? 5 : 4;
+          for (let i = mineCount; i < Math.min(candidates.length, mineCount + crysCount); i++) {
+            candidates[i].crystal = true;
+          }
+        }
+
+        // Place Armored Plates
+        if (this.anomaly === 'armor' || this.anomaly === 'omega') {
+          const armCount = this.anomaly === 'omega' ? 6 : 5;
+          let placed = 0;
+          for (let i = candidates.length - 1; i >= mineCount && placed < armCount; i--) {
+            if (!candidates[i].crystal && !candidates[i].hotspot) {
+              candidates[i].armored = true;
+              placed++;
+            }
+          }
+        }
+
+        // Scramble anomaly
+        if (this.anomaly === 'scramble' || this.anomaly === 'omega') {
+          let scr = 0;
+          const maxScr = this.anomaly === 'omega' ? 3 : 4;
+          for (let i = mineCount; i < candidates.length && scr < maxScr; i++) {
+            if (!candidates[i].armored) {
+              candidates[i].scrambled = true;
+              scr++;
+            }
+          }
+        }
+
+        this.recalculateCounts();
+        this.firstClickDone = true;
+      },
+
+      getNeighbors(r, c) {
+        const list = [];
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = r + dr, nc = c + dc;
+            if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols) {
+              list.push(this.board[nr][nc]);
+            }
+          }
+        }
+        return list;
+      },
+
+      recalculateCounts() {
+        for (let r = 0; r < this.rows; r++) {
+          for (let c = 0; c < this.cols; c++) {
+            const cell = this.board[r][c];
+            let count = 0;
+            for (const n of this.getNeighbors(r, c)) {
+              if (n.isMine) count++;
+            }
+            cell.adjMines = count;
+          }
+        }
+      },
+
+      setTool(tool) {
+        this.activeTool = tool;
+        if (['c4', 'arc', 'cross', 'amp'].includes(tool)) {
+          this.lastWireTool = tool;
+        }
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+          const t = btn.dataset.tool;
+          btn.classList.remove('active-dig', 'active-pin', 'active-c4', 'active-arc', 'active-cross', 'active-amp', 'active-sonar');
+          if (t === tool) btn.classList.add(`active-${t}`);
+        });
+        document.getElementById('tool-desc-box').innerHTML = TOOL_INFO[tool].desc;
+        if (this.tutorialMode) this.updateTutorialUI();
+      },
+
+      disarmAllWires() {
+        if (this.isDetonating || this.tutorialMode) return;
+        const wired = this.getWiredCells();
+        if (!wired.length) return;
+        for (const cell of wired) {
+          this.charges[cell.wire]++;
+          cell.wire = null;
+          cell.wireOrder = 0;
+        }
+        SFX.playWire('unwire');
+        this.showToast('Tutte le cariche sono state recuperate nell’inventario.', 'text-slate-300');
+        this.renderBoard();
+        this.updateHUD();
+      },
+
+      handleCellClick(r, c, isRightClick = false) {
+        SFX.init();
+        if (this.isDetonating || this.isGameOver) return;
+        const cell = this.board[r][c];
+
+        // === INTERACTIVE TUTORIAL GUARD ===
+        if (this.tutorialMode) {
+          if (this.tutorialStep === 1) {
+            if (r !== 2 || c !== 0) {
+              this.showToast('Tutorial: clicca la cella blu evidenziata a sinistra!', 'text-cyan-300');
+              return;
+            }
+            this.floodReveal(2, 0);
+            SFX.playReveal(15);
+            this.tutorialStep = 2;
+            this.setTool('arc');
+            this.renderBoard();
+            this.updateHUD();
+            return;
+          }
+          if (this.tutorialStep === 2) {
+            if (r !== 1 || c !== 3) {
+              this.showToast('Tutorial: cabla la mina in alto evidenziata in blu con ⚡ Ponte Arco!', 'text-cyan-300');
+              return;
+            }
+            this.setTool('arc');
+            this.wireCell(cell, 'arc');
+            this.tutorialStep = 3;
+            this.setTool('amp');
+            this.updateTutorialUI();
+            this.renderBoard();
+            return;
+          }
+          if (this.tutorialStep === 3) {
+            if (r !== 3 || c !== 3) {
+              this.showToast('Tutorial: cabla la mina in basso evidenziata in blu con ◈ Amplifica!', 'text-cyan-300');
+              return;
+            }
+            this.setTool('amp');
+            this.wireCell(cell, 'amp');
+            this.tutorialStep = 4;
+            this.updateTutorialUI();
+            this.renderBoard();
+            return;
+          }
+          if (this.tutorialStep === 4) {
+            this.showToast('Tutorial: tutto pronto! Premi il pulsante rosso ☢ DETONA!', 'text-amber-300');
+            return;
+          }
+          return;
+        }
+
+        // === NORMAL GAMEPLAY ===
+        // Right-click shortcut: Pin if activeTool is Pin, else Quick Wire/Unwire
+        if (isRightClick) {
+          if (cell.revealed || cell.armored) return;
+          if (this.activeTool === 'pin') {
+            this.togglePin(cell);
+            return;
+          }
+          if (cell.wire) {
+            this.unwireCell(cell);
+          } else {
+            let wireToUse = this.lastWireTool;
+            if (this.charges[wireToUse] <= 0) {
+              wireToUse = ['c4', 'arc', 'cross', 'amp'].find(k => this.charges[k] > 0);
+            }
+            if (wireToUse) {
+              this.wireCell(cell, wireToUse);
+            } else {
+              this.togglePin(cell);
+            }
+          }
+          return;
+        }
+
+        // Pin Tool
+        if (this.activeTool === 'pin') {
+          if (cell.revealed || cell.armored) return;
+          if (cell.wire) {
+            this.showToast('Rimuovi prima il modulo esplosivo se vuoi mettere una Nota.', 'text-amber-300');
+            return;
+          }
+          this.togglePin(cell);
+          return;
+        }
+
+        // Sonar Tool
+        if (this.activeTool === 'sonar') {
+          if (!this.firstClickDone) {
+            this.showToast('Fai prima uno scavo iniziale per mappare il settore!', 'text-amber-300');
+            return;
+          }
+          this.useSonar(r, c);
+          return;
+        }
+
+        // Wire Tools
+        if (['c4', 'arc', 'cross', 'amp'].includes(this.activeTool)) {
+          if (cell.revealed) return;
+          if (cell.armored) {
+            this.showToast('Placca corazzata! Rompila con una Carica a Croce o un Ponte Arco.', 'text-amber-300');
+            return;
+          }
+          if (!this.firstClickDone) {
+            this.showToast('Scava prima una cella per iniziare la ricognizione!', 'text-amber-300');
+            return;
+          }
+          if (cell.wire === this.activeTool) {
+            this.unwireCell(cell);
+          } else if (cell.wire) {
+            if (this.charges[this.activeTool] <= 0) {
+              this.showToast(`Cariche ${TOOL_INFO[this.activeTool].name} esaurite!`, 'text-rose-300');
+              return;
+            }
+            this.charges[cell.wire]++;
+            this.charges[this.activeTool]--;
+            cell.wire = this.activeTool;
+            SFX.playWire(this.activeTool);
+            this.renderBoard();
+            this.updateHUD();
+          } else {
+            this.wireCell(cell, this.activeTool);
+          }
+          return;
+        }
+
+        // DIG Tool
+        if (cell.armored) {
+          this.showToast('Placca corazzata: impossibile scavare a mano! Usa un blast adiacente.', 'text-amber-300');
+          return;
+        }
+        if (cell.wire || cell.pinned) {
+          this.showToast('Cella protetta da carica o Nota! Rimuovila prima di scavare.', 'text-amber-300');
+          return;
+        }
+
+        // Smart Chord on already revealed numbered cell
+        if (cell.revealed) {
+          if (!cell.scrambled && cell.adjMines > 0) {
+            this.tryChord(cell);
+          }
+          return;
+        }
+
+        // First click initialization
+        if (!this.firstClickDone) {
+          this.populateMinesAndAnomalies(r, c);
+        }
+
+        if (this.moves <= 0) {
+          this.showToast('Mosse esaurite! Cabla le mine individuate e premi DETONA.', 'text-rose-300');
+          return;
+        }
+
+        this.moves--;
+        this.digCell(cell);
+      },
+
+      togglePin(cell) {
+        cell.pinned = !cell.pinned;
+        SFX.playWire('pin');
+        this.renderBoard();
+        this.updateHUD();
+      },
+
+      wireCell(cell, type) {
+        if (this.charges[type] <= 0) {
+          this.showToast(`Cariche ${TOOL_INFO[type].name} esaurite!`, 'text-rose-300');
+          return;
+        }
+        this.charges[type]--;
+        cell.wire = type;
+        cell.pinned = false;
+        cell.wireOrder = ++this.wireOrderCounter;
+        cell.sonarPing = false;
+        SFX.playWire(type);
+        this.renderBoard();
+        this.updateHUD();
+      },
+
+      unwireCell(cell) {
+        if (!cell.wire) return;
+        this.charges[cell.wire]++;
+        cell.wire = null;
+        cell.wireOrder = 0;
+        SFX.playWire('unwire');
+        this.renderBoard();
+        this.updateHUD();
+      },
+
+      useSonar(r, c) {
+        if (this.charges.sonar <= 0) {
+          this.showToast('Cariche Sonar esaurite!', 'text-rose-300');
+          return;
+        }
+        const area = [this.board[r][c], ...this.getNeighbors(r, c)];
+        const hiddenMines = area.filter(cell => cell.isMine && !cell.wire && !cell.sonarPing);
+        this.charges.sonar--;
+        SFX.playSonar();
+        FX.spawnExplosion(r, c, '#10b981', 1.25);
+
+        if (hiddenMines.length > 0) {
+          const target = hiddenMines[Math.floor(Math.random() * hiddenMines.length)];
+          target.sonarPing = true;
+          target.pinned = false;
+          FX.spawnPopup(target.r, target.c, 'MINA!', '#34d399', true);
+          this.showToast(`Sonar: rilevata 1 mina sicura nell'area 3×3! (${hiddenMines.length} mine qui)`, 'text-emerald-300');
+        } else {
+          this.showToast('Sonar: nessuna mina non cablata in quest’area 3×3! Zona pulita.', 'text-emerald-300');
+        }
+
+        if (this.charges.sonar <= 0) this.setTool('dig');
+        this.renderBoard();
+        this.updateHUD();
+      },
+
+      digCell(cell) {
+        if (cell.isMine) {
+          if (this.hasRelic('auto_wire') && !this.autoWireUsedThisSector) {
+            this.autoWireUsedThisSector = true;
+            cell.wire = 'c4';
+            cell.wireOrder = ++this.wireOrderCounter;
+            SFX.playWire('c4');
+            FX.spawnPopup(cell.r, cell.c, 'SALVA-INNESCO!', '#c084fc', true);
+            this.showToast('Salva-Innesco attivato! Mina cablata in C4 automaticamente.', 'text-purple-300');
+            this.renderBoard();
+            this.updateHUD();
+            return;
+          }
+
+          cell.isMine = false;
+          cell.revealed = true;
+          cell.crater = true;
+          this.shields--;
+          SFX.playDud();
+          FX.spawnExplosion(cell.r, cell.c, '#ef4444', 1.35);
+          FX.spawnPopup(cell.r, cell.c, '-1 SCUDO!', '#f87171', true);
+          FX.flashBoard('rgba(239, 68, 68, 0.25)');
+          FX.shakeBoard(10);
+          this.recalculateCounts();
+          this.showToast('💥 Mina colpita durante lo scavo! -1 Scudo.', 'text-rose-400');
+          this.renderBoard();
+          this.updateHUD();
+          this.checkEndConditions();
+          return;
+        }
+
+        const revealedCount = this.floodReveal(cell.r, cell.c);
+        SFX.playReveal(revealedCount);
+
+        if (this.hasRelic('surgical') && revealedCount >= 5) {
+          this.charges.c4++;
+          this.surgicalBonusMult = +(this.surgicalBonusMult + 0.25).toFixed(2);
+          FX.spawnPopup(cell.r, cell.c, '+1 C4 / +0.25×', '#38bdf8', false);
+          this.showToast('Protocollo Chirurgico! Cascata ampia: +1 C4 e +0.25× alla prossima salva.', 'text-cyan-300');
+        }
+
+        this.renderBoard();
+        this.updateHUD();
+        this.checkEndConditions();
+      },
+
+      floodReveal(startR, startC) {
+        const queue = [this.board[startR][startC]];
+        let count = 0;
+
+        while (queue.length > 0) {
+          const cur = queue.shift();
+          if (cur.revealed || cur.isMine || cur.armored || cur.wire || cur.pinned) continue;
+          cur.revealed = true;
+          count++;
+
+          if (cur.crystal) {
+            cur.crystal = false;
+            this.credits += 40;
+            SFX.playCrystal();
+            FX.spawnPopup(cur.r, cur.c, '+40 ₡', '#38bdf8', false);
+          }
+
+          if (cur.adjMines === 0 && !cur.scrambled) {
+            for (const n of this.getNeighbors(cur.r, cur.c)) {
+              if (!n.revealed && !n.isMine && !n.armored && !n.wire && !n.pinned) {
+                queue.push(n);
+              }
+            }
+          }
+        }
+        return count;
+      },
+
+      tryChord(cell) {
+        const neighbors = this.getNeighbors(cell.r, cell.c);
+        const markedAround = neighbors.filter(n => n.wire !== null || n.pinned).length;
+        if (markedAround !== cell.adjMines) return;
+
+        const targets = neighbors.filter(n => !n.revealed && !n.wire && !n.pinned && !n.armored);
+        if (targets.length === 0) return;
+        if (this.moves <= 0) {
+          this.showToast('Mosse esaurite! Cabla le mine e premi DETONA.', 'text-rose-300');
+          return;
+        }
+
+        this.moves--;
+        let totalRevealed = 0;
+        let hitMine = false;
+
+        for (const t of targets) {
+          if (t.revealed || t.wire || t.pinned || t.armored) continue;
+          if (t.isMine) {
+            this.digCell(t);
+            hitMine = true;
+            break;
+          } else {
+            totalRevealed += this.floodReveal(t.r, t.c);
+          }
+        }
+
+        if (!hitMine && totalRevealed > 0) {
+          SFX.playReveal(totalRevealed);
+          if (this.hasRelic('surgical') && totalRevealed >= 5) {
+            this.charges.c4++;
+            this.surgicalBonusMult = +(this.surgicalBonusMult + 0.25).toFixed(2);
+            FX.spawnPopup(cell.r, cell.c, '+1 C4 / +0.25×', '#38bdf8', false);
+          }
+          this.renderBoard();
+          this.updateHUD();
+          this.checkEndConditions();
+        }
+      },
+
+      getWiredCells() {
+        const list = [];
+        for (let r = 0; r < this.rows; r++) {
+          for (let c = 0; c < this.cols; c++) {
+            if (this.board[r][c].wire) list.push(this.board[r][c]);
+          }
+        }
+        list.sort((a, b) => a.wireOrder - b.wireOrder);
+        return list;
+      },
+
+      getArcPairs(wiredList) {
+        const pairs = [];
+        const seen = new Set();
+        const allowDiag = this.hasRelic('arc_diag');
+
+        for (const a of wiredList) {
+          if (a.wire !== 'arc') continue;
+          for (const b of wiredList) {
+            if (a === b) continue;
+            const dr = b.r - a.r;
+            const dc = b.c - a.c;
+            const aligned = (dr === 0 || dc === 0) || (allowDiag && Math.abs(dr) === Math.abs(dc));
+            if (!aligned) continue;
+            const key = a.r < b.r || (a.r === b.r && a.c < b.c)
+              ? `${a.r},${a.c}-${b.r},${b.c}`
+              : `${b.r},${b.c}-${a.r},${a.c}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              pairs.push([a, b]);
+            }
+          }
+        }
+        return pairs;
+      },
+
+      // Estimates salvo yield WITHOUT peeking at cell.isMine (100% fair Minesweeper integrity!)
+      estimateSalvo(wiredList) {
+        if (!wiredList.length) return { points: 0, mult: 1, hasPotentialChain: false };
+
+        const ampRadius = this.hasRelic('thermal_amp') ? 2 : 1;
+        const amps = wiredList.filter(w => w.wire === 'amp');
+        let mult = 1.0 + this.surgicalBonusMult;
+        if (this.hasRelic('unstable_core')) mult += wiredList.length * 0.35;
+        if (this.anomaly === 'dense' || this.anomaly === 'omega') mult += 0.4;
+
+        let estPoints = 0;
+        const hasPotentialChain = wiredList.some(w => w.wire === 'cross') || this.getArcPairs(wiredList).length > 0;
+
+        for (const w of wiredList) {
+          let base = 60;
+          if (w.wire === 'c4') {
+            const adjNums = this.getNeighbors(w.r, w.c).filter(n => n.revealed && !n.crater && n.adjMines > 0).length;
+            base = 60 + adjNums * 15;
+          } else if (w.wire === 'arc') {
+            base = 80;
+            mult += this.hasRelic('arc_diag') ? 1.0 : 0.5;
+          } else if (w.wire === 'cross') {
+            base = 90;
+          } else if (w.wire === 'amp') {
+            base = 50;
+            mult += 1.0;
+          }
+
+          let localMult = 1;
+          for (const amp of amps) {
+            if (Math.abs(amp.r - w.r) <= ampRadius && Math.abs(amp.c - w.c) <= ampRadius) localMult *= 2;
+          }
+          if (w.hotspot) localMult *= this.hasRelic('hotspot_master') ? 3 : 2;
+          if (this.hasRelic('resonance_3')) {
+            if (this.getNeighbors(w.r, w.c).some(n => n.revealed && n.adjMines >= 3)) localMult *= 2;
+          }
+          const onBorder = w.r === 0 || w.r === this.rows - 1 || w.c === 0 || w.c === this.cols - 1;
+          if (this.hasRelic('border_hunter') && onBorder) localMult *= 2;
+
+          estPoints += Math.round(base * localMult * mult);
+          mult = +(mult + 0.25).toFixed(2);
+        }
+
+        return { points: estPoints, mult, hasPotentialChain };
+      },
+
+      showComboCallout(text) {
+        const el = document.getElementById('combo-callout');
+        if (!el) return;
+        el.textContent = text;
+        el.classList.add('show');
+        clearTimeout(this._calloutTimer);
+        this._calloutTimer = setTimeout(() => el.classList.remove('show'), 1450);
+      },
+
+      // =======================================================================
+      // DETONATION CLIMAX ENGINE
+      // =======================================================================
+      async triggerDetonation() {
+        SFX.init();
+        if (this.isDetonating || this.isGameOver) return;
+        if (this.tutorialMode && this.tutorialStep !== 4) return;
+        const wiredList = this.getWiredCells();
+        if (wiredList.length === 0) return;
+
+        this.isDetonating = true;
+        this.hoveredCell = null;
+        this.clearTutorialHighlights();
+        this.updateHUD();
+
+        const chainPill = document.getElementById('hud-chain-pill');
+        const chainText = document.getElementById('hud-chain-text');
+        chainPill.classList.remove('hidden');
+        chainPill.classList.add('inline-flex');
+
+        const ampRadius = this.hasRelic('thermal_amp') ? 2 : 1;
+        const activeAmps = wiredList.filter(w => w.wire === 'amp' && w.isMine).map(w => ({ r: w.r, c: w.c }));
+        const arcPairs = this.getArcPairs(wiredList);
+        const firedArcKeys = new Set();
+
+        const realWiredCount = wiredList.filter(w => w.isMine).length;
+        let salvoMult = 1.0 + this.surgicalBonusMult;
+        this.surgicalBonusMult = 0;
+        if (this.hasRelic('unstable_core') && realWiredCount > 0) {
+          salvoMult += realWiredCount * 0.35;
+        }
+        if (this.anomaly === 'dense' || this.anomaly === 'omega') {
+          salvoMult += 0.4;
+        }
+
+        let chainCount = 0;
+        let salvoPoints = 0;
+
+        const queue = wiredList.map(cell => ({
+          r: cell.r,
+          c: cell.c,
+          type: cell.wire,
+          isSecondary: false
+        }));
+        const processedBlasts = new Set();
+        const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+
+        const getAmpMultiplier = (r, c) => {
+          let m = 1;
+          for (const amp of activeAmps) {
+            if (Math.abs(amp.r - r) <= ampRadius && Math.abs(amp.c - c) <= ampRadius) m *= 2;
+          }
+          return m;
+        };
+
+        const hitTileFromWave = (tr, tc) => {
+          if (tr < 0 || tr >= this.rows || tc < 0 || tc >= this.cols) return;
+          const t = this.board[tr][tc];
+          const key = `${tr},${tc}`;
+
+          if (t.scrambled) t.scrambled = false;
+
+          if (t.crystal) {
+            t.crystal = false;
+            this.credits += 40;
+            SFX.playCrystal();
+            FX.spawnPopup(tr, tc, '+40 ₡', '#38bdf8', false);
+          }
+
+          if (t.armored) {
+            t.armored = false;
+            t.revealed = true;
+            t.crater = true;
+            FX.spawnExplosion(tr, tc, '#94a3b8', 0.7);
+            if (this.hasRelic('armor_piercer')) {
+              this.sectorScore += 90;
+              this.totalScore += 90;
+              this.credits += 20;
+              FX.spawnPopup(tr, tc, '+90 PT / +20₡', '#34d399', false);
+            }
+            return;
+          }
+
+          if (t.isMine && !t.wire && !processedBlasts.has(key)) {
+            processedBlasts.add(key);
+            t.pinned = false;
+            queue.push({ r: tr, c: tc, type: 'secondary', isSecondary: true });
+            return;
+          }
+
+          if (!t.revealed && !t.isMine && !t.wire) {
+            t.revealed = true;
+            t.crater = true;
+            t.pinned = false;
+          }
+        };
+
+        // Sequential Detonation Loop
+        while (queue.length > 0) {
+          const ev = queue.shift();
+          const cell = this.board[ev.r][ev.c];
+          const cellKey = `${ev.r},${ev.c}`;
+
+          if (!ev.isSecondary) {
+            cell.wire = null;
+            cell.wireOrder = 0;
+          }
+
+          // DUD check (wired an empty cell!)
+          if (!ev.isSecondary && !cell.isMine) {
+            cell.revealed = true;
+            this.shields--;
+            salvoMult = 1.0;
+            SFX.playDud();
+            FX.spawnExplosion(ev.r, ev.c, '#64748b', 0.75);
+            FX.spawnPopup(ev.r, ev.c, 'VUOTO! -1🛡️', '#f87171', true);
+            FX.flashBoard('rgba(239, 68, 68, 0.24)');
+            FX.shakeBoard(8);
+            this.renderBoard();
+            this.updateHUD();
+            await sleep(220);
+            if (this.shields <= 0) break;
+            continue;
+          }
+
+          if (!cell.isMine) continue;
+
+          // === REAL MINE DETONATION ===
+          processedBlasts.add(cellKey);
+          cell.isMine = false;
+          cell.revealed = true;
+          cell.crater = true;
+          cell.sonarPing = false;
+          cell.pinned = false;
+          chainCount++;
+          if (!this.tutorialMode) this.totalMinesDetonated++;
+
+          // Un-scramble neighbors + Seismic Wake relic
+          for (const n of this.getNeighbors(ev.r, ev.c)) {
+            if (n.scrambled) n.scrambled = false;
+            if (this.hasRelic('seismic_wake') && !n.revealed && !n.isMine && !n.armored && !n.wire) {
+              n.revealed = true;
+              if (n.crystal) {
+                n.crystal = false;
+                this.credits += 40;
+                FX.spawnPopup(n.r, n.c, '+40 ₡', '#38bdf8', false);
+              }
+            }
+          }
+
+          let basePts = 60;
+          let blastColor = '#f59e0b';
+
+          if (ev.type === 'c4') {
+            const adjNums = this.getNeighbors(ev.r, ev.c).filter(n => n.revealed && !n.crater && n.adjMines > 0).length;
+            basePts = 60 + adjNums * 15;
+            blastColor = '#f59e0b';
+          } else if (ev.type === 'arc') {
+            basePts = 80;
+            salvoMult += this.hasRelic('arc_diag') ? 1.0 : 0.5;
+            blastColor = '#06b6d4';
+          } else if (ev.type === 'cross') {
+            basePts = 90;
+            blastColor = '#ef4444';
+          } else if (ev.type === 'amp') {
+            basePts = 50;
+            salvoMult += 1.0;
+            blastColor = '#a855f7';
+          } else if (ev.type === 'secondary') {
+            basePts = this.hasRelic('domino') ? 120 : 95;
+            salvoMult += 0.35;
+            blastColor = '#fb923c';
+          }
+
+          let localMult = getAmpMultiplier(ev.r, ev.c);
+
+          // Hotspot Bonus!
+          if (cell.hotspot) {
+            cell.hotspot = false;
+            const hsMult = this.hasRelic('hotspot_master') ? 3 : 2;
+            localMult *= hsMult;
+            this.credits += 25;
+            if (this.hasRelic('hotspot_master')) this.charges.arc++;
+            FX.spawnPopup(ev.r, ev.c, `HOTSPOT ×${hsMult}! +25₡`, '#fde047', true);
+          }
+
+          if (this.hasRelic('resonance_3')) {
+            if (this.getNeighbors(ev.r, ev.c).some(n => n.revealed && n.adjMines >= 3)) localMult *= 2;
+          }
+
+          const onBorder = ev.r === 0 || ev.r === this.rows - 1 || ev.c === 0 || ev.c === this.cols - 1;
+          if (this.hasRelic('border_hunter') && onBorder) {
+            localMult *= 2;
+            this.moves++;
+          }
+
+          if (this.hasRelic('gold_mine')) {
+            this.credits += 14;
+          }
+
+          const finalPts = Math.round(basePts * localMult * salvoMult);
+          salvoPoints += finalPts;
+          this.sectorScore += finalPts;
+          if (!this.tutorialMode) this.totalScore += finalPts;
+
+          chainText.textContent = `CATENA ${chainCount} · ×${salvoMult.toFixed(2)}`;
+
+          // Dynamic Combo Callouts & Screen Juice
+          if (chainCount === 3) this.showComboCallout('⚡ CATENA TRIPLA!');
+          else if (chainCount === 5) this.showComboCallout('🔥 SOVRACCARICO ×5!');
+          else if (chainCount >= 7) this.showComboCallout('☢ DEMOLIZIONE TOTALE!');
+
+          SFX.playBlast(chainCount - 1);
+          FX.spawnExplosion(ev.r, ev.c, blastColor, localMult > 1 ? 1.55 : 1.1);
+          FX.spawnPopup(ev.r, ev.c, `+${finalPts}`, localMult > 1 ? '#e879f9' : '#fbbf24', localMult > 1 || ev.isSecondary);
+          FX.shakeBoard(Math.min(13, 4 + chainCount * 1.2));
+          if (localMult >= 2 || chainCount >= 3) {
+            FX.flashBoard(localMult >= 2 ? 'rgba(168, 85, 247, 0.20)' : 'rgba(245, 158, 11, 0.18)');
+          }
+
+          // Geometric Blast Propagations
+          if (ev.type === 'arc') {
+            for (const [a, b] of arcPairs) {
+              if ((a.r === ev.r && a.c === ev.c) || (b.r === ev.r && b.c === ev.c)) {
+                const pKey = `${a.r},${a.c}-${b.r},${b.c}`;
+                if (firedArcKeys.has(pKey)) continue;
+                firedArcKeys.add(pKey);
+                SFX.playArc();
+                FX.spawnBeam(a.r, a.c, b.r, b.c, '#22d3ee', true);
+
+                const stepR = Math.sign(b.r - a.r);
+                const stepC = Math.sign(b.c - a.c);
+                let cr = a.r + stepR;
+                let cc = a.c + stepC;
+                while (cr !== b.r || cc !== b.c) {
+                  hitTileFromWave(cr, cc);
+                  cr += stepR;
+                  cc += stepC;
+                }
+              }
+            }
+          }
+
+          if (ev.type === 'cross') {
+            const range = this.hasRelic('cross_reach') ? 4 : 2;
+            const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+            for (const [dr, dc] of dirs) {
+              const endR = Math.max(0, Math.min(this.rows - 1, ev.r + dr * range));
+              const endC = Math.max(0, Math.min(this.cols - 1, ev.c + dc * range));
+              FX.spawnBeam(ev.r, ev.c, endR, endC, '#f87171', false);
+              for (let step = 1; step <= range; step++) {
+                hitTileFromWave(ev.r + dr * step, ev.c + dc * step);
+              }
+            }
+          }
+
+          if (ev.type === 'secondary' && this.hasRelic('domino')) {
+            const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+            for (const [dr, dc] of dirs) {
+              hitTileFromWave(ev.r + dr, ev.c + dc);
+            }
+          }
+
+          salvoMult = +(salvoMult + 0.25).toFixed(2);
+          this.renderBoard();
+          this.updateHUD();
+          await sleep(Math.max(95, 200 - chainCount * 10));
+        }
+
+        // End of Salvo Cleanup
+        if (!this.tutorialMode && chainCount > this.maxChain) this.maxChain = chainCount;
+
+        if (this.hasRelic('kinetic_shield') && chainCount >= 3 && this.shields > 0) {
+          if (this.shields < this.maxShields) this.shields++;
+          this.credits += 25;
+          this.showToast(`🔋 Scudo Cinetico! Catena di ${chainCount}: +1 Scudo e +25 ₡!`, 'text-emerald-300');
+        } else if (salvoPoints > 0) {
+          this.showToast(`☢ Salva completata! ${chainCount} mine detonate per +${salvoPoints} PT!`, 'text-amber-300');
+        }
+
+        this.recalculateCounts();
+        this.autoCleanZeroNeighbors();
+
+        this.isDetonating = false;
+        setTimeout(() => {
+          chainPill.classList.add('hidden');
+          chainPill.classList.remove('inline-flex');
+        }, 1250);
+
+        this.renderBoard();
+        this.updateHUD();
+
+        // Tutorial finish hook
+        if (this.tutorialMode) {
+          this.tutorialStep = 5;
+          SFX.playWin();
+          this.updateTutorialUI();
+          return;
+        }
+
+        this.checkEndConditions();
+      },
+
+      autoCleanZeroNeighbors() {
+        let changed = true;
+        while (changed) {
+          changed = false;
+          for (let r = 0; r < this.rows; r++) {
+            for (let c = 0; c < this.cols; c++) {
+              const cell = this.board[r][c];
+              if (cell.revealed && !cell.scrambled && cell.adjMines === 0) {
+                for (const n of this.getNeighbors(r, c)) {
+                  if (!n.revealed && !n.isMine && !n.armored && !n.wire) {
+                    n.revealed = true;
+                    n.pinned = false;
+                    if (n.crystal) {
+                      n.crystal = false;
+                      this.credits += 40;
+                      FX.spawnPopup(n.r, n.c, '+40 ₡', '#38bdf8', false);
+                    }
+                    changed = true;
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      countLiveMines() {
+        let m = 0;
+        for (let r = 0; r < this.rows; r++) {
+          for (let c = 0; c < this.cols; c++) {
+            if (this.board[r][c].isMine) m++;
+          }
+        }
+        return m;
+      },
+
+      checkEndConditions() {
+        if (this.isGameOver || this.tutorialMode) return;
+
+        if (this.shields <= 0) {
+          this.triggerGameOver('Scudi esauriti durante la demolizione.');
+          return;
+        }
+
+        const liveMines = this.countLiveMines();
+        if (this.firstClickDone && liveMines === 0 && this.sectorScore < this.sectorTarget) {
+          const bonus = Math.max(300, this.sectorTarget - this.sectorScore);
+          this.sectorScore += bonus;
+          this.totalScore += bonus;
+          this.showToast(`SGOMBERO TOTALE! Tutte le mine neutralizzate (+${bonus} PT)!`, 'text-emerald-300');
+          this.updateHUD();
+        }
+
+        if (this.sectorScore >= this.sectorTarget) {
+          SFX.playWin();
+          Storage.save(this.sector, this.totalScore);
+
+          // Check Campaign Victory at Sector 6 Boss!
+          if (this.sector === 6 && !this.victoryShown) {
+            this.victoryShown = true;
+            setTimeout(() => {
+              document.getElementById('vic-total-score').textContent = this.totalScore;
+              document.getElementById('vic-max-chain').textContent = this.maxChain;
+              document.getElementById('modal-victory').classList.remove('hidden');
+            }, 600);
+            return;
+          }
+
+          setTimeout(() => this.openShop(), 580);
+          return;
+        }
+
+        const wiredCount = this.getWiredCells().length;
+        const totalWireCharges = this.charges.c4 + this.charges.arc + this.charges.cross + this.charges.amp;
+        if (this.moves <= 0 && wiredCount === 0 && totalWireCharges === 0) {
+          this.triggerGameOver('Mosse e cariche esplosive esaurite prima della Quota.');
+        } else if (this.moves <= 0 && (wiredCount > 0 || totalWireCharges > 0)) {
+          this.showToast('⚠️ Mosse finite! Puoi ancora cablare le mine dedotte e premere DETONA!', 'text-amber-300');
+        }
+      },
+
+      triggerGameOver(reason) {
+        this.isGameOver = true;
+        SFX.playFail();
+        Storage.save(this.sector, this.totalScore);
+        document.getElementById('gameover-reason').textContent = reason;
+        document.getElementById('go-sector').textContent = this.sector;
+        document.getElementById('go-total-score').textContent = this.totalScore;
+        document.getElementById('go-mines').textContent = this.totalMinesDetonated;
+        document.getElementById('go-max-chain').textContent = this.maxChain;
+        document.getElementById('modal-gameover').classList.remove('hidden');
+      },
+
+      // =======================================================================
+      // 6. OFFICINA TATTICA (SHOP, REROLL & RELIC DRAFT)
+      // =======================================================================
+      openShop() {
+        const baseReward = 60 + this.sector * 15;
+        const moveBonus = this.moves * 4;
+        const overkillBonus = Math.min(90, Math.floor((this.sectorScore - this.sectorTarget) / 22));
+        const earned = baseReward + moveBonus + overkillBonus;
+        this.credits += earned;
+        this.relicDraftTaken = false;
+
+        document.getElementById('shop-bonus-summary').innerHTML = `
+          <span>Settore ${this.sector}: <strong>+${baseReward} ₡</strong></span>
+          <span>Mosse (${this.moves}): <strong>+${moveBonus} ₡</strong></span>
+          <span>Overkill: <strong>+${overkillBonus} ₡</strong></span>
+          <span class="text-emerald-300 font-bold">Totale: +${earned} ₡</span>
+        `;
+
+        this.rollShopRelics();
+        this.renderShopState();
+        document.getElementById('modal-shop').classList.remove('hidden');
+      },
+
+      rollShopRelics() {
+        const pool = RELIC_CATALOG.filter(r => !this.relics.includes(r.id));
+        for (let i = pool.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        const choices = pool.slice(0, 3);
+        const relicContainer = document.getElementById('shop-relic-choices');
+        relicContainer.innerHTML = '';
+
+        if (choices.length === 0) {
+          this.relicDraftTaken = true;
+          relicContainer.innerHTML = '<div class="col-span-3 p-3 rounded-xl bg-slate-900 text-xs text-slate-400 text-center">Hai già raccolto tutte le reliquie disponibili!</div>';
+        } else {
+          choices.forEach(relic => {
+            const card = document.createElement('button');
+            card.className = `relic-draft-card text-left p-3 rounded-2xl bg-slate-900/95 hover:bg-slate-800 border ${relic.color} transition flex flex-col justify-between gap-2`;
+            card.innerHTML = `
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xl">${relic.icon}</span>
+                  <span class="text-[10px] font-mono-tech uppercase px-1.5 py-0.5 rounded bg-slate-950/85 border border-slate-700">${relic.rarity}</span>
+                </div>
+                <div class="font-display font-bold text-sm text-white">${relic.name}</div>
+                <p class="text-[11px] text-slate-300 mt-1 leading-snug">${relic.desc}</p>
+              </div>
+              <div class="text-[10px] font-mono-tech uppercase tracking-wider text-amber-300 font-bold pt-1 border-t border-slate-800">Installa Gratis →</div>
+            `;
+            card.onclick = () => {
+              if (this.relicDraftTaken) return;
+              this.relicDraftTaken = true;
+              this.relics.push(relic.id);
+              SFX.playWire('amp');
+              document.querySelectorAll('.relic-draft-card').forEach(el => {
+                el.disabled = true;
+                el.classList.add('opacity-40');
+              });
+              card.classList.remove('opacity-40');
+              card.classList.add('ring-2', 'ring-emerald-400', 'bg-emerald-950/40');
+              this.updateHUD();
+              this.renderShopState();
+            };
+            relicContainer.appendChild(card);
+          });
+        }
+      },
+
+      renderShopState() {
+        document.getElementById('shop-credits').textContent = this.credits;
+        document.getElementById('shop-shields').textContent = `${this.shields}/${this.maxShields}`;
+
+        const skipBtn = document.getElementById('btn-skip-relic');
+        const rerollBtn = document.getElementById('btn-reroll-relics');
+        skipBtn.classList.toggle('hidden', this.relicDraftTaken);
+        rerollBtn.classList.toggle('hidden', this.relicDraftTaken);
+        rerollBtn.disabled = this.credits < 30 || this.relicDraftTaken;
+        rerollBtn.classList.toggle('opacity-40', rerollBtn.disabled);
+
+        rerollBtn.onclick = () => {
+          if (this.credits < 30 || this.relicDraftTaken) return;
+          this.credits -= 30;
+          SFX.playWire('arc');
+          this.rollShopRelics();
+          this.renderShopState();
+          this.updateHUD();
+        };
+
+        skipBtn.onclick = () => {
+          if (this.relicDraftTaken) return;
+          this.relicDraftTaken = true;
+          this.credits += 60;
+          SFX.playWire('buy');
+          document.querySelectorAll('.relic-draft-card').forEach(el => {
+            el.disabled = true;
+            el.classList.add('opacity-35');
+          });
+          this.renderShopState();
+          this.updateHUD();
+        };
+
+        const upgrades = [
+          {
+            icon: '🛡️',
+            title: 'Ripara Scudo',
+            sub: '+1 Scudo immediato',
+            cost: 45,
+            disabled: this.shields >= this.maxShields,
+            action: () => { this.shields = Math.min(this.maxShields, this.shields + 1); }
+          },
+          {
+            icon: '💠',
+            title: 'Corazza Extra',
+            sub: '+1 Scudo Max e cura 1',
+            cost: 95,
+            disabled: this.maxShields >= 6,
+            action: () => { this.maxShields++; this.shields++; }
+          },
+          {
+            icon: '⚡',
+            title: '+1 Ponte Arco / sett.',
+            sub: `Base attuale: ${this.baseCharges.arc}`,
+            cost: 65,
+            disabled: false,
+            action: () => { this.baseCharges.arc++; }
+          },
+          {
+            icon: '✚',
+            title: '+1 Carica Croce / sett.',
+            sub: `Base attuale: ${this.baseCharges.cross}`,
+            cost: 70,
+            disabled: false,
+            action: () => { this.baseCharges.cross++; }
+          },
+          {
+            icon: '◈',
+            title: '+1 Amplificatore / sett.',
+            sub: `Base attuale: ${this.baseCharges.amp}`,
+            cost: 80,
+            disabled: false,
+            action: () => { this.baseCharges.amp++; }
+          },
+          {
+            icon: '📡',
+            title: '+1 Sonar / sett.',
+            sub: `Base attuale: ${this.baseCharges.sonar}`,
+            cost: 60,
+            disabled: false,
+            action: () => { this.baseCharges.sonar++; }
+          },
+          {
+            icon: '💣',
+            title: '+2 C4 Base / sett.',
+            sub: `Base attuale: ${this.baseCharges.c4}`,
+            cost: 50,
+            disabled: false,
+            action: () => { this.baseCharges.c4 += 2; }
+          },
+          {
+            icon: '⛏',
+            title: '+4 Mosse Base / sett.',
+            sub: `Bonus attuale: +${this.bonusMoves}`,
+            cost: 55,
+            disabled: false,
+            action: () => { this.bonusMoves += 4; }
+          }
+        ];
+
+        const grid = document.getElementById('shop-upgrades-grid');
+        grid.innerHTML = '';
+
+        upgrades.forEach(u => {
+          const canAfford = this.credits >= u.cost && !u.disabled;
+          const btn = document.createElement('button');
+          btn.disabled = !canAfford;
+          btn.className = `p-2.5 rounded-xl border text-left flex items-center justify-between gap-2 transition ${
+            canAfford
+              ? 'bg-slate-900 hover:bg-slate-800 border-slate-700 hover:border-cyan-400/65 cursor-pointer'
+              : 'bg-slate-950/60 border-slate-800/70 opacity-45 cursor-not-allowed'
+          }`;
+          btn.innerHTML = `
+            <div class="flex items-center gap-2.5">
+              <span class="text-lg">${u.icon}</span>
+              <div>
+                <div class="text-xs font-bold text-white leading-tight">${u.title}</div>
+                <div class="text-[10px] text-slate-400">${u.sub}</div>
+              </div>
+            </div>
+            <span class="font-mono-tech text-xs font-bold px-2 py-1 rounded-lg bg-slate-950 border border-emerald-500/35 text-emerald-300 shrink-0">${u.cost} ₡</span>
+          `;
+          btn.onclick = () => {
+            if (this.credits < u.cost || u.disabled) return;
+            this.credits -= u.cost;
+            u.action();
+            SFX.playWire('buy');
+            this.updateHUD();
+            this.renderShopState();
+          };
+          grid.appendChild(btn);
+        });
+      },
+
+      // =======================================================================
+      // 7. UI & BOARD RENDERING
+      // =======================================================================
+      renderBoard() {
+        const container = document.getElementById('grid-container');
+        container.style.gridTemplateColumns = `repeat(${this.cols}, minmax(0, 1fr))`;
+        container.innerHTML = '';
+
+        const fontSize = this.cols >= 11 ? 'text-xs sm:text-sm'
+          : (this.cols >= 10 ? 'text-xs sm:text-base'
+          : (this.cols <= 5 ? 'text-xl sm:text-2xl' : 'text-sm sm:text-lg'));
+
+        for (let r = 0; r < this.rows; r++) {
+          for (let c = 0; c < this.cols; c++) {
+            const cell = this.board[r][c];
+            const el = document.createElement('div');
+            el.dataset.r = r;
+            el.dataset.c = c;
+            el.className = `grid-cell ${fontSize}`;
+
+            if (cell.armored) {
+              el.classList.add('cell-armored');
+              el.innerHTML = CELL_SVGS.armor;
+            } else if (cell.revealed) {
+              el.classList.add(cell.crater ? 'cell-crater' : 'cell-revealed');
+              if (cell.scrambled) {
+                el.innerHTML = '<span class="text-amber-400/95 animate-pulse">?</span>';
+              } else if (cell.adjMines > 0) {
+                el.classList.add(`num-${cell.adjMines}`, 'chordable');
+                // Subtle emerald rim if chord-ready!
+                const markedAround = this.getNeighbors(r, c).filter(n => n.wire || n.pinned).length;
+                if (markedAround === cell.adjMines) el.classList.add('chord-ready');
+                el.textContent = cell.adjMines;
+              } else {
+                el.innerHTML = cell.crater
+                  ? '<span class="text-[10px] text-rose-500/45">✕</span>'
+                  : '<span class="text-[10px] text-slate-700/80">·</span>';
+              }
+            } else {
+              // Covered tile
+              if (cell.wire) {
+                el.classList.add('cell-wired', `cell-wired-${cell.wire}`);
+                el.innerHTML = CELL_SVGS[cell.wire];
+              } else if (cell.pinned) {
+                el.classList.add('cell-pinned');
+                el.innerHTML = CELL_SVGS.pin;
+              } else {
+                el.classList.add('cell-hidden');
+                if (cell.sonarPing) {
+                  el.classList.add('cell-sonar-ping');
+                  el.innerHTML = CELL_SVGS.sonar;
+                }
+              }
+              if (cell.crystal) el.classList.add('cell-crystal');
+              if (cell.hotspot) el.classList.add('cell-hotspot');
+            }
+
+            // Tutorial spotlight target cell
+            if (this.tutorialMode) {
+              if ((this.tutorialStep === 1 && r === 2 && c === 0) ||
+                  (this.tutorialStep === 2 && r === 1 && c === 3) ||
+                  (this.tutorialStep === 3 && r === 3 && c === 3)) {
+                el.classList.add('cell-tut-target');
+              }
+            }
+
+            let pressTimer = null;
+            let longFired = false;
+            el.addEventListener('click', (e) => {
+              e.preventDefault();
+              if (longFired) { longFired = false; return; }
+              this.handleCellClick(r, c, false);
+            });
+            el.addEventListener('contextmenu', (e) => {
+              e.preventDefault();
+              this.handleCellClick(r, c, true);
+            });
+            el.addEventListener('touchstart', () => {
+              longFired = false;
+              pressTimer = window.setTimeout(() => {
+                pressTimer = null;
+                longFired = true;
+                this.handleCellClick(r, c, true);
+              }, 460);
+            }, { passive: true });
+            const cancelPress = () => { if (pressTimer) { window.clearTimeout(pressTimer); pressTimer = null; } };
+            el.addEventListener('touchend', cancelPress);
+            el.addEventListener('touchmove', cancelPress);
+            el.addEventListener('touchcancel', cancelPress);
+            el.addEventListener('mouseenter', () => {
+              this.hoveredCell = { r, c };
+            });
+            el.addEventListener('mouseleave', () => {
+              if (this.hoveredCell && this.hoveredCell.r === r && this.hoveredCell.c === c) {
+                this.hoveredCell = null;
+              }
+            });
+
+            container.appendChild(el);
+          }
+        }
+      },
+
+      animateScoreCounter() {
+        const el = document.getElementById('hud-score');
+        if (!el) return;
+        const diff = this.sectorScore - this.displayedScore;
+        if (Math.abs(diff) <= 2) {
+          this.displayedScore = this.sectorScore;
+          el.textContent = this.displayedScore;
+          return;
+        }
+        this.displayedScore += Math.ceil(diff * 0.25);
+        el.textContent = this.displayedScore;
+        requestAnimationFrame(() => this.animateScoreCounter());
+      },
+
+      updateHUD() {
+        document.getElementById('hud-sector-badge').textContent = this.tutorialMode ? 'TUTORIAL' : `SETTORE ${this.sector}`;
+        this.animateScoreCounter();
+        document.getElementById('hud-target').textContent = this.sectorTarget;
+        const pct = Math.min(100, Math.round((this.sectorScore / this.sectorTarget) * 100));
+        document.getElementById('hud-progress-bar').style.width = `${pct}%`;
+
+        document.getElementById('hud-shields').textContent = `${this.shields}/${this.maxShields}`;
+        const shieldBox = document.getElementById('hud-shield-box');
+        shieldBox.classList.toggle('border-rose-500/70', this.shields === 1);
+        shieldBox.classList.toggle('bg-rose-950/50', this.shields === 1);
+
+        document.getElementById('hud-moves').textContent = this.moves;
+        document.getElementById('hud-credits').textContent = this.credits;
+
+        const liveMines = this.firstClickDone ? this.countLiveMines() : this.minesTotal;
+        const wiredList = this.getWiredCells();
+        document.getElementById('hud-mines-left').textContent = liveMines;
+        document.getElementById('hud-wired-count').textContent = wiredList.length;
+
+        // Disarm All quick button
+        const disarmBtn = document.getElementById('btn-disarm-all');
+        disarmBtn.classList.toggle('hidden', wiredList.length === 0 || this.isDetonating || this.tutorialMode);
+        disarmBtn.classList.toggle('inline-flex', wiredList.length > 0 && !this.isDetonating && !this.tutorialMode);
+
+        // Board wrapper ambient danger / armed aura
+        const bw = document.getElementById('board-wrapper');
+        bw.classList.toggle('danger-low', this.shields === 1);
+        bw.classList.toggle('armed-ready', wiredList.length > 0 && this.shields > 1);
+
+        // Charges
+        document.getElementById('charge-c4').textContent = `×${this.charges.c4}`;
+        document.getElementById('charge-arc').textContent = `×${this.charges.arc}`;
+        document.getElementById('charge-cross').textContent = `×${this.charges.cross}`;
+        document.getElementById('charge-amp').textContent = `×${this.charges.amp}`;
+        document.getElementById('charge-sonar').textContent = `×${this.charges.sonar}`;
+
+        // Detonate Button & Live Salvo Yield Estimate
+        const detBtn = document.getElementById('btn-detonate');
+        const detBadge = document.getElementById('btn-detonate-badge');
+        const detPreview = document.getElementById('detonate-preview-tag');
+        const estBox = document.getElementById('salvo-est-box');
+        const estVal = document.getElementById('salvo-est-value');
+        const estBar = document.getElementById('hud-est-bar');
+
+        if (wiredList.length > 0 && !this.isDetonating) {
+          detBtn.disabled = false;
+          detBtn.classList.remove('disarmed');
+          detBtn.classList.add('armed');
+          detBadge.classList.remove('hidden');
+          detBadge.textContent = `${wiredList.length} INNESC${wiredList.length === 1 ? 'O' : 'HI'}`;
+          const arcs = this.getArcPairs(wiredList).length;
+          detPreview.textContent = arcs > 0 ? `⚡ ${arcs} Arco/i collegato/i!` : `${wiredList.length} cariche armate`;
+          detPreview.className = 'font-mono-tech text-xs text-amber-300 font-bold';
+
+          const est = this.estimateSalvo(wiredList);
+          estBox.classList.remove('hidden');
+          estVal.textContent = `~${est.points}${est.hasPotentialChain ? '+' : ''} PT (×${est.mult.toFixed(2)})`;
+
+          const estPct = Math.min(100 - pct, Math.round((est.points / this.sectorTarget) * 100));
+          estBar.style.left = `${pct}%`;
+          estBar.style.width = `${estPct}%`;
+        } else {
+          detBtn.disabled = true;
+          detBtn.classList.remove('armed');
+          detBtn.classList.add('disarmed');
+          detBadge.classList.add('hidden');
+          detPreview.textContent = this.isDetonating ? 'DETONAZIONE IN CORSO...' : 'Nessuna mina cablata';
+          detPreview.className = 'font-mono-tech text-xs text-slate-400';
+          estBox.classList.add('hidden');
+          estBar.style.width = '0%';
+        }
+
+        // Relics strip
+        const rCont = document.getElementById('relics-container');
+        document.getElementById('relic-count-tag').textContent = `${this.relics.length} installat${this.relics.length === 1 ? 'a' : 'e'}`;
+        if (this.relics.length === 0) {
+          rCont.innerHTML = '<span class="text-xs text-slate-500 italic">Completa il Settore 1 per sbloccare l’Officina Tattica.</span>';
+        } else {
+          rCont.innerHTML = '';
+          this.relics.forEach(id => {
+            const rel = RELIC_CATALOG.find(x => x.id === id);
+            if (!rel) return;
+            const badge = document.createElement('button');
+            badge.className = `px-2 py-1 rounded-lg bg-slate-900 border ${rel.color} text-xs flex items-center gap-1 hover:brightness-125 transition`;
+            badge.innerHTML = `<span>${rel.icon}</span><span class="font-bold text-[11px] text-slate-200">${rel.name}</span>`;
+            const showTip = () => {
+              const tip = document.getElementById('relic-tooltip');
+              document.getElementById('rt-name').textContent = `${rel.icon} ${rel.name} (${rel.rarity})`;
+              document.getElementById('rt-desc').textContent = rel.desc;
+              tip.classList.remove('hidden');
+              const rect = badge.getBoundingClientRect();
+              tip.style.left = `${Math.min(window.innerWidth - 260, Math.max(12, rect.left))}px`;
+              tip.style.top = `${Math.max(12, rect.top - tip.offsetHeight - 8)}px`;
+            };
+            const hideTip = () => document.getElementById('relic-tooltip').classList.add('hidden');
+            badge.addEventListener('mouseenter', showTip);
+            badge.addEventListener('mouseleave', hideTip);
+            badge.addEventListener('click', (e) => {
+              e.stopPropagation();
+              showTip();
+              setTimeout(hideTip, 2600);
+            });
+            rCont.appendChild(badge);
+          });
+        }
+      },
+
+      showToast(msg, colorClass = 'text-slate-300') {
+        const el = document.getElementById('toast-msg');
+        el.textContent = msg;
+        el.className = `text-xs font-mono-tech text-center px-3 py-1 rounded-lg bg-slate-900/85 border border-slate-800/90 transition-all ${colorClass}`;
+      }
+    };
+
+    // =========================================================================
+    // 8. EVENT WIRING & BOOTSTRAP
+    // =========================================================================
+    window.onload = function () {
+      FX.init();
+
+      // Load saved best record on start screen
+      const rec = Storage.load();
+      if (rec.bestScore > 0) {
+        document.getElementById('start-best-box').classList.remove('hidden');
+        document.getElementById('start-best-val').textContent = `S${rec.bestSector} · ${rec.bestScore} PT`;
+      }
+
+      Game.startNewRun();
+
+      // Start modal buttons
+      document.getElementById('btn-start-game').addEventListener('click', () => {
+        SFX.init();
+        document.getElementById('modal-start').classList.add('hidden');
+      });
+      document.getElementById('btn-start-tutorial').addEventListener('click', () => {
+        SFX.init();
+        Game.startTutorial();
+      });
+
+      // Tutorial banner buttons
+      document.getElementById('btn-tut-skip').addEventListener('click', () => {
+        Game.exitTutorialToRealRun();
+      });
+      document.getElementById('btn-tut-finish').addEventListener('click', () => {
+        Game.exitTutorialToRealRun();
+      });
+
+      // Help modal & Replay Tutorial
+      document.getElementById('btn-help').addEventListener('click', () => {
+        document.getElementById('modal-help').classList.remove('hidden');
+      });
+      document.getElementById('btn-close-help').addEventListener('click', () => {
+        document.getElementById('modal-help').classList.add('hidden');
+      });
+      document.getElementById('btn-replay-tutorial').addEventListener('click', () => {
+        SFX.init();
+        Game.startTutorial();
+      });
+
+      // Mute toggle
+      document.getElementById('btn-mute').addEventListener('click', () => {
+        SFX.init();
+        SFX.muted = !SFX.muted;
+        document.getElementById('mute-icon').textContent = SFX.muted ? '🔇' : '🔊';
+      });
+
+      // Tool dock buttons (includes dedicated Sonar button)
+      document.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          SFX.init();
+          Game.setTool(btn.dataset.tool);
+        });
+      });
+
+      // Disarm All button
+      document.getElementById('btn-disarm-all').addEventListener('click', () => {
+        SFX.init();
+        Game.disarmAllWires();
+      });
+
+      // Detonate trigger
+      document.getElementById('btn-detonate').addEventListener('click', () => {
+        Game.triggerDetonation();
+      });
+
+      // Next sector from shop
+      document.getElementById('btn-next-sector').addEventListener('click', () => {
+        document.getElementById('modal-shop').classList.add('hidden');
+        Game.startSector(Game.sector + 1);
+      });
+
+      // Victory modal (Endless vs Restart)
+      document.getElementById('btn-endless').addEventListener('click', () => {
+        document.getElementById('modal-victory').classList.add('hidden');
+        Game.openShop();
+      });
+      document.getElementById('btn-vic-restart').addEventListener('click', () => {
+        document.getElementById('modal-victory').classList.add('hidden');
+        Game.startNewRun();
+      });
+
+      // Restart from game over
+      document.getElementById('btn-restart').addEventListener('click', () => {
+        document.getElementById('modal-gameover').classList.add('hidden');
+        Game.startNewRun();
+      });
+
+      // Keyboard shortcuts
+      window.addEventListener('keydown', (e) => {
+        if (!document.getElementById('modal-start').classList.contains('hidden')) return;
+        if (!document.getElementById('modal-shop').classList.contains('hidden')) return;
+        if (!document.getElementById('modal-gameover').classList.contains('hidden')) return;
+        if (!document.getElementById('modal-victory').classList.contains('hidden')) return;
+
+        const k = e.key.toLowerCase();
+        if (k === 'q') Game.setTool('dig');
+        else if (k === 'f') Game.setTool('pin');
+        else if (k === '1') Game.setTool('c4');
+        else if (k === '2') Game.setTool('arc');
+        else if (k === '3') Game.setTool('cross');
+        else if (k === '4') Game.setTool('amp');
+        else if (k === '5') Game.setTool('sonar');
+        else if (e.code === 'Space') {
+          e.preventDefault();
+          Game.triggerDetonation();
+        }
+      });
+    };
+  </script>
+</body>
+</html>
