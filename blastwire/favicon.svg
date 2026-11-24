@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="BLASTWIRE">
+  <rect width="32" height="32" rx="7" fill="#070b11"/>
+  <rect x="3.5" y="3.5" width="25" height="25" rx="4" fill="none" stroke="#06b6d4" stroke-width="1.6"/>
+  <path d="M16 6.2v3.2M16 22.6v3.2M6.2 16h3.2M22.6 16h3.2" stroke="#f59e0b" stroke-width="1.8" stroke-linecap="round"/>
+  <circle cx="16" cy="16" r="5.4" fill="#ef4444"/>
+  <circle cx="16" cy="16" r="2.1" fill="#f59e0b"/>
+</svg>
